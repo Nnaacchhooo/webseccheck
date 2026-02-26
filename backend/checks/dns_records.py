@@ -60,7 +60,10 @@ async def check_dmarc(domain: str) -> Dict[str, Any]:
 
 async def check_dkim(domain: str) -> Dict[str, Any]:
     """Check common DKIM selectors."""
-    selectors = ["default", "google", "selector1", "selector2", "k1", "mail", "dkim"]
+    selectors = ["default", "google", "selector1", "selector2", "k1", "mail", "dkim",
+                  "resend", "mailchimp", "mandrill", "amazonses", "ses", "sendgrid", "s1", "s2",
+                  "cf2024-1", "cf2024-2", "protonmail", "protonmail2", "protonmail3",
+                  "mxvault", "smtp", "email", "mailo", "zendesk1", "zendesk2"]
     for sel in selectors:
         txt = await _query_txt(domain, f"{sel}._domainkey")
         if "v=DKIM1" in txt.upper() or "p=" in txt:

@@ -1,8 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Shield shape - cyber green matching site -->
-  <path d="M32 4 L56 16 V32 C56 48 32 60 32 60 C32 60 8 48 8 32 V16 Z" fill="#00e5ff" stroke="#00ff88" stroke-width="2"/>
-  <!-- Inner shield detail -->
-  <path d="M32 10 L50 19 V32 C50 44 32 54 32 54 C32 54 14 44 14 32 V19 Z" fill="#0a1628"/>
-  <!-- Checkmark inside shield -->
-  <path d="M22 32 L29 39 L42 24" fill="none" stroke="#00e5ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Outer shield - cyan/teal gradient feel -->
+  <path d="M32 2 L58 15 V34 C58 50 32 62 32 62 C32 62 6 50 6 34 V15 Z" fill="#0f2847"/>
+  <path d="M32 2 L58 15 V34 C58 50 32 62 32 62 C32 62 6 50 6 34 V15 Z" fill="none" stroke="#00e5ff" stroke-width="2"/>
+  <!-- Inner shield highlight -->
+  <path d="M32 8 L52 18 V33 C52 46 32 56 32 56 C32 56 12 46 12 33 V18 Z" fill="#0a1f3d"/>
+  <!-- Red/orange accent shield (like OWASP style) -->
+  <path d="M32 14 L46 22 V33 C46 42 32 50 32 50 C32 50 18 42 18 33 V22 Z" fill="#00e5ff" opacity="0.15"/>
+  <!-- Lock body -->
+  <rect x="25" y="30" width="14" height="12" rx="2" fill="#00e5ff"/>
+  <!-- Lock shackle -->
+  <path d="M28 30 V26 C28 21 36 21 36 26 V30" fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Keyhole -->
+  <circle cx="32" cy="35" r="2" fill="#0a1628"/>
+  <rect x="31.2" y="36" width="1.6" height="3.5" rx="0.8" fill="#0a1628"/>
 </svg>

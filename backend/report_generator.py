@@ -115,7 +115,7 @@ def _build_styles():
     styles.add(ParagraphStyle("SubTitle", fontSize=14, textColor=GREEN, fontName="Helvetica-Bold", spaceAfter=6, spaceBefore=12))
     styles.add(ParagraphStyle("BodyText2", fontSize=10, textColor=TEXT_WHITE, fontName="Helvetica", spaceAfter=6, leading=14))
     styles.add(ParagraphStyle("BodyDim", fontSize=9, textColor=TEXT_GRAY, fontName="Helvetica", spaceAfter=4, leading=12))
-    styles.add(ParagraphStyle("Code", fontSize=8, textColor=GREEN, fontName="Courier", spaceAfter=6, leading=11, leftIndent=12, backColor=BG_CARD2))
+    styles.add(ParagraphStyle("WSCCode", fontSize=8, textColor=GREEN, fontName="Courier", spaceAfter=6, leading=11, leftIndent=12, backColor=BG_CARD2))
     styles.add(ParagraphStyle("FooterStyle", fontSize=8, textColor=TEXT_DIM, fontName="Helvetica", alignment=1))
     return styles
 
@@ -297,7 +297,7 @@ def generate_pdf(scan_data: dict) -> bytes:
         if status != "pass":
             story.append(Paragraph(f'<b>Remediation:</b> {rem_info["remediation"]}', styles["BodyDim"]))
             code_lines = rem_info["code"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br/>")
-            story.append(Paragraph(code_lines, styles["Code"]))
+            story.append(Paragraph(code_lines, styles["WSCCode"]))
 
         story.append(Spacer(1, 8))
 

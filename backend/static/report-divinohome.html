@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebSecCheck Security Report — divinohome.com</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;--green:#00FF41;--green2:#00cc33;--red:#ff4444;--orange:#ff9800;--yellow:#ffd600;--blue:#4fc3f7;--gray:#888;--gray2:#555;--text:#e0e0e0;--text2:#aaa;--border:#2a2a2a;--critical:#ff1744;--high:#ff5252;--medium:#ff9800;--low:#ffd600;--info:#4fc3f7;--pass:#00FF41}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.6;min-height:100vh}
+a{color:var(--green)}
+.container{max-width:1100px;margin:0 auto;padding:0 24px}
+
+/* Header */
+.report-header{background:linear-gradient(135deg,#0a0a0a 0%,#0f1a0f 50%,#0a0a0a 100%);border-bottom:1px solid var(--border);padding:40px 0}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:48px;height:48px;border:2px solid var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;background:rgba(0,255,65,.05)}
+.brand h1{font-size:24px;font-weight:700;color:#fff;letter-spacing:-.5px}
+.brand h1 span{color:var(--green)}
+.report-badge{background:linear-gradient(135deg,var(--green),var(--green2));color:#000;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.report-meta{margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.meta-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 18px}
+.meta-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);margin-bottom:4px}
+.meta-value{font-size:15px;color:#fff;font-weight:600;word-break:break-all}
+.meta-value.domain{color:var(--green)}
+
+/* Navigation */
+.report-nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 0;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.nav-inner{display:flex;gap:4px;overflow-x:auto;padding:0 24px}
+.nav-inner a{color:var(--text2);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:6px;white-space:nowrap;transition:.2s}
+.nav-inner a:hover{color:#fff;background:var(--bg3)}
+
+/* Sections */
+section{padding:48px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.section-header{margin-bottom:32px}
+.section-num{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--green);font-weight:700;margin-bottom:6px}
+.section-title{font-size:28px;font-weight:700;color:#fff}
+.section-subtitle{color:var(--text2);margin-top:6px;font-size:15px}
+
+/* Score Gauge */
+.score-area{display:flex;align-items:center;gap:60px;flex-wrap:wrap;justify-content:center}
+.gauge-wrap{position:relative;width:260px;height:260px;flex-shrink:0}
+.gauge-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge-bg{fill:none;stroke:var(--bg4);stroke-width:18}
+.gauge-fill{fill:none;stroke:var(--orange);stroke-width:18;stroke-linecap:round;stroke-dasharray:691.15;stroke-dashoffset:193.52;transition:stroke-dashoffset 1.5s ease}
+.gauge-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.gauge-score{font-size:72px;font-weight:800;color:#fff;line-height:1}
+.gauge-max{font-size:18px;color:var(--gray);margin-top:2px}
+.gauge-grade{display:inline-block;margin-top:8px;background:var(--orange);color:#fff;font-size:20px;font-weight:800;padding:4px 18px;border-radius:6px;letter-spacing:2px}
+.score-summary{flex:1;min-width:280px}
+.score-summary h3{font-size:20px;color:#fff;margin-bottom:12px}
+.score-summary p{color:var(--text2);margin-bottom:16px;font-size:15px;line-height:1.7}
+.stat-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:20px}
+.stat-box{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 20px;flex:1;min-width:100px;text-align:center}
+.stat-num{font-size:28px;font-weight:800}
+.stat-num.pass{color:var(--pass)}
+.stat-num.fail{color:var(--red)}
+.stat-num.warn{color:var(--orange)}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);margin-top:4px}
+
+/* Category Breakdown */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.cat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;transition:.2s}
+.cat-card:hover{border-color:var(--gray2)}
+.cat-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.cat-card-title{font-size:16px;font-weight:700;color:#fff}
+.cat-score{font-size:14px;font-weight:700;padding:4px 12px;border-radius:6px}
+.cat-score.good{background:rgba(0,255,65,.1);color:var(--green)}
+.cat-score.bad{background:rgba(255,68,68,.1);color:var(--red)}
+.cat-score.mid{background:rgba(255,152,0,.1);color:var(--orange)}
+.cat-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:16px}
+.cat-bar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.cat-checks{display:flex;flex-direction:column;gap:8px}
+.cat-check{display:flex;align-items:center;gap:10px;font-size:13px}
+.cat-check .icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:700}
+.cat-check .icon.pass{background:rgba(0,255,65,.15);color:var(--green)}
+.cat-check .icon.fail{background:rgba(255,68,68,.15);color:var(--red)}
+.cat-check .icon.warn{background:rgba(255,152,0,.15);color:var(--orange)}
+
+/* Findings */
+.finding{background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.finding-header{padding:20px 24px;display:flex;align-items:center;gap:16px;cursor:pointer;flex-wrap:wrap}
+.severity-badge{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;flex-shrink:0}
+.severity-badge.critical{background:rgba(255,23,68,.15);color:var(--critical);border:1px solid rgba(255,23,68,.3)}
+.severity-badge.high{background:rgba(255,82,82,.15);color:var(--high);border:1px solid rgba(255,82,82,.3)}
+.severity-badge.medium{background:rgba(255,152,0,.15);color:var(--medium);border:1px solid rgba(255,152,0,.3)}
+.severity-badge.low{background:rgba(255,214,0,.15);color:var(--low);border:1px solid rgba(255,214,0,.3)}
+.severity-badge.info{background:rgba(79,195,247,.15);color:var(--info);border:1px solid rgba(79,195,247,.3)}
+.severity-badge.pass-badge{background:rgba(0,255,65,.1);color:var(--pass);border:1px solid rgba(0,255,65,.3)}
+.finding-name{font-size:16px;font-weight:700;color:#fff;flex:1}
+.finding-status{font-size:13px;font-weight:700;padding:4px 12px;border-radius:6px}
+.finding-status.pass{background:rgba(0,255,65,.1);color:var(--green)}
+.finding-status.fail{background:rgba(255,68,68,.1);color:var(--red)}
+.finding-status.warn{background:rgba(255,152,0,.1);color:var(--orange)}
+.finding-body{padding:0 24px 24px;display:none}
+.finding.open .finding-body{display:block}
+.finding-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.finding-grid{grid-template-columns:1fr}}
+.finding-section{margin-bottom:16px}
+.finding-section h4{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:8px;font-weight:700}
+.finding-section p,.finding-section li{color:var(--text2);font-size:14px;line-height:1.7}
+.finding-section ul{padding-left:18px}
+.finding-section li{margin-bottom:4px}
+code{background:var(--bg4);color:var(--green);padding:2px 6px;border-radius:4px;font-size:13px;font-family:'SF Mono','Fira Code',monospace}
+pre{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;margin:8px 0;font-size:13px;line-height:1.6;color:var(--green);font-family:'SF Mono','Fira Code',monospace}
+.chevron{color:var(--gray);transition:.2s;font-size:18px;flex-shrink:0}
+.finding.open .chevron{transform:rotate(90deg)}
+
+/* Action Plan */
+.action-table{width:100%;border-collapse:collapse}
+.action-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);padding:12px 16px;border-bottom:1px solid var(--border)}
+.action-table td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:top}
+.action-table tr:last-child td{border-bottom:none}
+.action-table tr:hover td{background:var(--bg3)}
+.priority-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#000}
+.effort-tag{font-size:12px;padding:3px 10px;border-radius:4px;background:var(--bg4);color:var(--text2)}
+
+/* About */
+.about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.about-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center}
+.about-icon{font-size:32px;margin-bottom:12px}
+.about-card h4{color:#fff;margin-bottom:8px;font-size:16px}
+.about-card p{color:var(--text2);font-size:14px}
+
+/* Footer */
+.report-footer{background:var(--bg2);border-top:1px solid var(--border);padding:32px 0;text-align:center}
+.footer-brand{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
+.footer-brand span{color:var(--green)}
+.footer-text{color:var(--gray);font-size:13px}
+.footer-disclaimer{color:var(--gray2);font-size:12px;margin-top:16px;max-width:700px;margin-left:auto;margin-right:auto;line-height:1.6}
+
+/* CTA */
+.cta-box{background:linear-gradient(135deg,rgba(0,255,65,.05),rgba(0,255,65,.02));border:1px solid rgba(0,255,65,.2);border-radius:12px;padding:32px;text-align:center;margin-top:32px}
+.cta-box h3{color:#fff;font-size:20px;margin-bottom:8px}
+.cta-box p{color:var(--text2);margin-bottom:20px}
+.cta-btn{display:inline-block;background:var(--green);color:#000;padding:12px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;transition:.2s}
+.cta-btn:hover{background:#00e639;transform:translateY(-1px)}
+
+/* Watermark */
+.watermark{position:fixed;bottom:20px;right:20px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:11px;color:var(--gray);z-index:50;opacity:.7}
+.watermark span{color:var(--green)}
+
+/* Print */
+@media print{
+  body{background:#fff;color:#222}
+  .report-nav,.watermark,.cta-box{display:none}
+  .finding-body{display:block!important}
+  pre{background:#f5f5f5;color:#222;border-color:#ddd}
+  code{background:#eee;color:#222}
+  .section-title,.finding-name{color:#111}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="report-header">
+<div class="container">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-icon">🛡️</div>
+      <div>
+        <h1>Web<span>Sec</span>Check</h1>
+        <div style="font-size:12px;color:var(--gray);letter-spacing:1px">SECURITY ASSESSMENT REPORT</div>
+      </div>
+    </div>
+    <div class="report-badge">Full Security Audit</div>
+  </div>
+  <div class="report-meta">
+    <div class="meta-item">
+      <div class="meta-label">Target Domain</div>
+      <div class="meta-value domain">divinohome.com</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Scan Date</div>
+      <div class="meta-value">February 26, 2026 — 13:55 UTC</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Report ID</div>
+      <div class="meta-value" style="font-family:monospace;font-size:13px">WSC-2026-0226-D1V0</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Overall Grade</div>
+      <div class="meta-value" style="color:var(--orange);font-size:22px">C — 72 / 100</div>
+    </div>
+  </div>
+</div>
+</header>
+
+<!-- Nav -->
+<nav class="report-nav">
+<div class="nav-inner container">
+  <a href="#executive-summary">Executive Summary</a>
+  <a href="#score">Overall Score</a>
+  <a href="#categories">Categories</a>
+  <a href="#findings">Detailed Findings</a>
+  <a href="#action-plan">Action Plan</a>
+  <a href="#about">About</a>
+</div>
+</nav>
+
+<main class="container">
+
+<!-- 1. Executive Summary -->
+<section id="executive-summary">
+<div class="section-header">
+  <div class="section-num">01 — Executive Summary</div>
+  <h2 class="section-title">Security Posture Overview</h2>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <div style="grid-column:1/-1">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;border-left:4px solid var(--orange)">
+      <p style="font-size:16px;color:#fff;font-weight:600;margin-bottom:12px">⚠️ Your e-commerce site has a solid foundation but needs targeted improvements to fully protect customer data.</p>
+      <p style="color:var(--text2);font-size:15px;line-height:1.8"><strong style="color:#fff">divinohome.com</strong> scored <strong style="color:var(--orange)">72 out of 100</strong> (Grade C) in our comprehensive security assessment. Your SSL/TLS configuration is excellent with TLS 1.3, HSTS with preload, and a valid Google Trust Services certificate. However, <strong style="color:var(--red)">3 HTTP security headers are missing</strong> (X-Frame-Options, Referrer-Policy, Permissions-Policy) and your <strong style="color:var(--red)">email authentication is incomplete</strong> — missing DMARC means attackers could spoof emails appearing to come from your domain, undermining customer trust.</p>
+      <p style="color:var(--text2);font-size:15px;line-height:1.8;margin-top:12px">As an e-commerce store handling customer personal data and payment information, these gaps are particularly important for <strong style="color:#fff">PCI DSS compliance</strong> and maintaining shopper confidence. The good news: since you're on <strong style="color:#fff">Tienda Nube</strong> behind <strong style="color:#fff">Cloudflare</strong>, <strong style="color:var(--green)">most fixes can be applied via Cloudflare Transform Rules in under 15 minutes</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:20px">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:6px">Checks Performed</div>
+    <div style="font-size:32px;font-weight:800;color:#fff">16</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">Across 4 security categories</div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:6px">Issues Found</div>
+    <div style="font-size:32px;font-weight:800;color:var(--red)">4</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">Plus 1 warning to review</div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:6px">Est. Fix Time</div>
+    <div style="font-size:32px;font-weight:800;color:var(--orange)">~15m</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">For all issues via Cloudflare</div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:6px">Risk Exposure</div>
+    <div style="font-size:32px;font-weight:800;color:var(--orange)">MEDIUM</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">Clickjacking, data leakage, spoofing</div>
+  </div>
+</div>
+</section>
+
+<!-- 2. Score -->
+<section id="score">
+<div class="section-header">
+  <div class="section-num">02 — Overall Score</div>
+  <h2 class="section-title">Security Score</h2>
+  <p class="section-subtitle">Weighted composite of all security checks — scanned in 0.25s</p>
+</div>
+<div class="score-area">
+  <div class="gauge-wrap">
+    <svg class="gauge-svg" viewBox="0 0 240 240">
+      <circle class="gauge-bg" cx="120" cy="120" r="110"/>
+      <circle class="gauge-fill" cx="120" cy="120" r="110"/>
+    </svg>
+    <div class="gauge-center">
+      <div class="gauge-score">72</div>
+      <div class="gauge-max">out of 100</div>
+      <div class="gauge-grade">C</div>
+    </div>
+  </div>
+  <div class="score-summary">
+    <h3>What This Score Means</h3>
+    <p>A score of 72 indicates your site has <strong style="color:var(--green)">strong foundational security</strong> — excellent SSL/TLS, HSTS preloading, CSP, and proper cookie flags — but is <strong style="color:var(--orange)">missing several browser-side protections and email authentication</strong>. For an e-commerce store processing customer orders and personal data, closing these gaps is important for PCI DSS alignment and customer trust.</p>
+    <p>Sites scoring 70-79 are considered <strong>moderate risk</strong> — you're above average but have clear, easily fixable improvements available.</p>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num pass">11</div>
+        <div class="stat-label">Passed</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num fail">4</div>
+        <div class="stat-label">Failed</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num warn">1</div>
+        <div class="stat-label">Warnings</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- 3. Categories -->
+<section id="categories">
+<div class="section-header">
+  <div class="section-num">03 — Category Breakdown</div>
+  <h2 class="section-title">Results by Category</h2>
+</div>
+<div class="cat-grid">
+
+  <!-- Transport Security -->
+  <div class="cat-card">
+    <div class="cat-card-header">
+      <div class="cat-card-title">🔒 Transport Security</div>
+      <div class="cat-score good">100%</div>
+    </div>
+    <div class="cat-bar"><div class="cat-bar-fill" style="width:100%;background:var(--green)"></div></div>
+    <div class="cat-checks">
+      <div class="cat-check"><div class="icon pass">✓</div><span>SSL Certificate — Valid, Google Trust Services WE1</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>Certificate Expiry — 58 days remaining (Apr 25, 2026)</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>TLS Protocol — TLSv1.3</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>HSTS — max-age=31536000; includeSubDomains; preload</span></div>
+    </div>
+  </div>
+
+  <!-- HTTP Security Headers -->
+  <div class="cat-card">
+    <div class="cat-card-header">
+      <div class="cat-card-title">🛡️ HTTP Security Headers</div>
+      <div class="cat-score mid">40%</div>
+    </div>
+    <div class="cat-bar"><div class="cat-bar-fill" style="width:40%;background:var(--orange)"></div></div>
+    <div class="cat-checks">
+      <div class="cat-check"><div class="icon pass">✓</div><span>Content-Security-Policy — frame-ancestors + upgrade-insecure-requests</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>X-Frame-Options — Missing</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>X-Content-Type-Options — nosniff</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>Referrer-Policy — Missing</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>Permissions-Policy — Missing</span></div>
+    </div>
+  </div>
+
+  <!-- Email Authentication -->
+  <div class="cat-card">
+    <div class="cat-card-header">
+      <div class="cat-card-title">📧 Email Authentication</div>
+      <div class="cat-score bad">33%</div>
+    </div>
+    <div class="cat-bar"><div class="cat-bar-fill" style="width:33%;background:var(--red)"></div></div>
+    <div class="cat-checks">
+      <div class="cat-check"><div class="icon pass">✓</div><span>SPF — Configured with custom _spfm domain</span></div>
+      <div class="cat-check"><div class="icon warn">!</div><span>DKIM — Not found for common selectors</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>DMARC — Missing</span></div>
+    </div>
+  </div>
+
+  <!-- Server Hardening -->
+  <div class="cat-card">
+    <div class="cat-card-header">
+      <div class="cat-card-title">⚙️ Server Hardening</div>
+      <div class="cat-score good">100%</div>
+    </div>
+    <div class="cat-bar"><div class="cat-bar-fill" style="width:100%;background:var(--green)"></div></div>
+    <div class="cat-checks">
+      <div class="cat-check"><div class="icon pass">✓</div><span>Server Version — Cloudflare, no version exposed</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>X-Powered-By — Not exposed</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>Cookies — Secure, HttpOnly, SameSite flags set</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>CMS Detection — No version exposed</span></div>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- 4. Detailed Findings -->
+<section id="findings">
+<div class="section-header">
+  <div class="section-num">04 — Detailed Findings</div>
+  <h2 class="section-title">Complete Analysis</h2>
+  <p class="section-subtitle">Click any finding to expand full details and remediation steps</p>
+</div>
+
+<!-- Finding: X-Frame-Options FAIL -->
+<div class="finding open">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge high">High</span>
+  <span class="finding-name">X-Frame-Options Header Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The X-Frame-Options header is not present. This header prevents your site from being embedded in iframes on malicious websites. While your CSP includes <code>frame-ancestors</code> for Tienda Nube domains, the legacy X-Frame-Options header provides defense-in-depth for older browsers.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li><strong>Clickjacking attacks:</strong> Attackers overlay invisible iframes of your store, tricking customers into clicking buttons they can't see</li>
+          <li>Customers could unknowingly add items to cart, proceed to checkout, or submit forms</li>
+          <li>Particularly dangerous for e-commerce with authenticated checkout flows</li>
+          <li>May affect PCI DSS compliance requirements for protecting cardholder data entry</li>
+        </ul>
+      </div>
+      <div class="finding-section">
+        <h4>E-Commerce Risk</h4>
+        <p><strong style="color:var(--high)">HIGH</strong> — Online stores are prime targets for clickjacking as attackers can trick users into initiating purchases or revealing payment details.</p>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation — Cloudflare Dashboard</h4>
+        <p>Go to <strong>Rules → Transform Rules → Modify Response Header</strong> and add:</p>
+        <pre>Header: X-Frame-Options
+Value: SAMEORIGIN</pre>
+        <p style="margin-top:8px">Use <code>SAMEORIGIN</code> since Tienda Nube may need to embed your store in its admin iframes. If not needed, use <code>DENY</code> for maximum protection.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Tienda Nube Platform Note</h4>
+        <p>This header may need to be configured at the <strong>Tienda Nube (Nuvemshop) platform level</strong>. Contact Tienda Nube support to request enabling X-Frame-Options, or use Cloudflare Transform Rules to add it at the CDN edge.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: DMARC FAIL -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge high">High</span>
+  <span class="finding-name">DMARC Record Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>No DMARC (Domain-based Message Authentication, Reporting & Conformance) record found at <code>_dmarc.divinohome.com</code>. DMARC ties SPF and DKIM together and tells receiving servers what to do with unauthenticated email.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>Attackers can send phishing emails that appear to come from @divinohome.com</li>
+          <li><strong>Critical for e-commerce:</strong> Fake order confirmations, shipping updates, or payment requests could trick your customers</li>
+          <li>Damages domain reputation and email deliverability</li>
+          <li>Fails Google/Yahoo 2024 sender requirements — your emails may land in spam</li>
+          <li>No visibility into who is sending email on behalf of your domain</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation — DNS Record</h4>
+        <p>Add a TXT record in your DNS provider (Cloudflare or domain registrar):</p>
+        <pre>Name: _dmarc
+Type: TXT
+Value: v=DMARC1; p=none; rua=mailto:dmarc@divinohome.com; ruf=mailto:dmarc@divinohome.com; fo=1;</pre>
+        <p style="margin-top:8px">Start with <code>p=none</code> (monitor mode), review reports for 4-6 weeks, then escalate to <code>p=quarantine</code> and eventually <code>p=reject</code>.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Progressive Enforcement</h4>
+        <ul>
+          <li><strong>Week 1-4:</strong> <code>p=none</code> — collect reports, identify legitimate senders</li>
+          <li><strong>Week 5-8:</strong> <code>p=quarantine; pct=25</code> — quarantine 25%</li>
+          <li><strong>Week 9+:</strong> <code>p=reject</code> — full enforcement</li>
+        </ul>
+        <p style="margin-top:8px">💡 Consider a free DMARC monitoring service like <a href="https://dmarc.postmarkapp.com" target="_blank">Postmark DMARC</a> to easily parse reports.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: Referrer-Policy FAIL -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge medium">Medium</span>
+  <span class="finding-name">Referrer-Policy Header Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The Referrer-Policy header is not set. Without it, the browser's default behavior sends the full URL (including query parameters) to third-party sites when users click external links or when third-party resources are loaded.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>Customer browsing patterns and product interests leaked to third-party analytics and ad networks</li>
+          <li>Internal URL structure (admin panels, order IDs, session tokens in URLs) exposed to external services</li>
+          <li>For e-commerce: customer order tracking URLs and account pages may leak sensitive identifiers</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation — Cloudflare</h4>
+        <p><strong>Rules → Transform Rules → Modify Response Header:</strong></p>
+        <pre>Header: Referrer-Policy
+Value: strict-origin-when-cross-origin</pre>
+        <p style="margin-top:8px">This sends only the origin (domain) to cross-origin requests while keeping the full URL for same-origin navigation — the best balance of privacy and functionality.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Tienda Nube Note</h4>
+        <p>This header can be added via <strong>Cloudflare Transform Rules</strong> without any changes to the Tienda Nube platform configuration.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: Permissions-Policy FAIL -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge medium">Medium</span>
+  <span class="finding-name">Permissions-Policy Header Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The Permissions-Policy (formerly Feature-Policy) header is not set. This header controls which browser features and APIs can be used on your site and by embedded third-party content.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>Third-party scripts (analytics, chat widgets, ads) could access camera, microphone, geolocation without restriction</li>
+          <li>Embedded content from payment providers or social widgets may request unnecessary permissions</li>
+          <li>No control over which browser APIs third-party code can use</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation — Cloudflare</h4>
+        <p><strong>Rules → Transform Rules → Modify Response Header:</strong></p>
+        <pre>Header: Permissions-Policy
+Value: camera=(), microphone=(), geolocation=(), interest-cohort=()</pre>
+        <p style="margin-top:8px">This disables camera, microphone, geolocation, and FLoC/Topics API for all contexts. An e-commerce store typically doesn't need any of these — safe to disable entirely.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: DKIM WARN -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge low">Low</span>
+  <span class="finding-name">DKIM Not Found for Common Selectors</span>
+  <span class="finding-status warn">WARN</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>No DKIM records were found for common selectors (default, google, selector1, selector2, k1, mail, dkim). DKIM cryptographically signs outgoing emails to prove they haven't been tampered with. Tienda Nube or your email provider may use a custom selector not checked in this scan.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>If DKIM is truly missing, emails may fail authentication at strict receivers</li>
+          <li>Required for full DMARC enforcement</li>
+          <li>Reduced email deliverability — order confirmations and shipping notifications may land in spam</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation</h4>
+        <p>Check with your email provider (Tienda Nube's built-in email, or any third-party service you use) for their specific DKIM selector and DNS records. Common steps:</p>
+        <ul>
+          <li>Check Tienda Nube admin panel for email authentication settings</li>
+          <li>If using a transactional email service (Mailgun, SendGrid, etc.), follow their DKIM setup guide</li>
+          <li>Add the provided CNAME/TXT records to your DNS</li>
+        </ul>
+      </div>
+      <div class="finding-section">
+        <h4>Verification</h4>
+        <p>Send a test email to <a href="https://www.mail-tester.com" target="_blank">mail-tester.com</a> to check if DKIM is actually signing your outgoing emails with a custom selector.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Passing findings -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">SSL Certificate Validity</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ Valid certificate issued by <strong>Google Trust Services WE1</strong> using <strong>TLS 1.3</strong>. Expires <strong>April 25, 2026</strong> (58 days remaining). Auto-renewal is managed by Cloudflare.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">HSTS (HTTP Strict Transport Security)</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ Excellent HSTS configuration: <code>max-age=31536000; includeSubDomains; preload</code>. Full 1-year max-age with subdomain coverage and preload list eligibility. This is the gold standard for transport security.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">Content-Security-Policy (CSP)</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ CSP is configured with <code>frame-ancestors</code> restricting embedding to Tienda Nube domains, plus <code>upgrade-insecure-requests</code> to force HTTPS for all resources. Consider expanding CSP directives (script-src, style-src, etc.) for additional XSS protection.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">X-Content-Type-Options</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ <code>X-Content-Type-Options: nosniff</code> is set. Browsers will not MIME-sniff responses, preventing content-type confusion attacks.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">SPF Record</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ SPF record found with a custom <code>_spfm</code> domain configuration. Authorized mail servers are properly defined for your domain.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">Server Version Disclosure</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ Server header shows <code>cloudflare</code> with no version number. Origin server details are properly hidden behind the CDN.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">X-Powered-By</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ The X-Powered-By header is not exposed. No application framework or technology information is leaked to potential attackers.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">Cookie Security</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ 1 cookie analyzed — all security flags are properly set: <strong>Secure</strong> (HTTPS only), <strong>HttpOnly</strong> (no JavaScript access), and <strong>SameSite</strong> (CSRF protection). Excellent cookie configuration for an e-commerce store handling customer sessions.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">CMS Version Detection</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ No CMS version information exposed in HTML source, meta tags, or response headers. Tienda Nube platform details are not leaked.</p>
+  </div>
+</div>
+</div>
+
+</section>
+
+<!-- 5. Action Plan -->
+<section id="action-plan">
+<div class="section-header">
+  <div class="section-num">05 — Priority Action Plan</div>
+  <h2 class="section-title">Recommended Fix Order</h2>
+  <p class="section-subtitle">Ordered by impact and effort — fix the most critical issues first</p>
+</div>
+
+<div style="overflow-x:auto">
+<table class="action-table">
+<thead>
+  <tr>
+    <th>#</th>
+    <th>Action</th>
+    <th>Severity</th>
+    <th>Effort</th>
+    <th>Impact</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><div class="priority-num" style="background:var(--high)">1</div></td>
+    <td><strong style="color:#fff">Add X-Frame-Options header</strong><br><span style="color:var(--text2);font-size:13px">Cloudflare Transform Rule → SAMEORIGIN</span></td>
+    <td><span class="severity-badge high" style="font-size:10px">High</span></td>
+    <td><span class="effort-tag">2 min</span></td>
+    <td style="color:var(--text2)">Blocks clickjacking attacks on your store</td>
+  </tr>
+  <tr>
+    <td><div class="priority-num" style="background:var(--high)">2</div></td>
+    <td><strong style="color:#fff">Add DMARC DNS record</strong><br><span style="color:var(--text2);font-size:13px">TXT record at _dmarc.divinohome.com</span></td>
+    <td><span class="severity-badge high" style="font-size:10px">High</span></td>
+    <td><span class="effort-tag">5 min</span></td>
+    <td style="color:var(--text2)">Prevents phishing emails impersonating your store</td>
+  </tr>
+  <tr>
+    <td><div class="priority-num" style="background:var(--medium)">3</div></td>
+    <td><strong style="color:#fff">Add Referrer-Policy header</strong><br><span style="color:var(--text2);font-size:13px">Cloudflare Transform Rule → strict-origin-when-cross-origin</span></td>
+    <td><span class="severity-badge medium" style="font-size:10px">Medium</span></td>
+    <td><span class="effort-tag">2 min</span></td>
+    <td style="color:var(--text2)">Prevents customer browsing data leakage</td>
+  </tr>
+  <tr>
+    <td><div class="priority-num" style="background:var(--medium)">4</div></td>
+    <td><strong style="color:#fff">Add Permissions-Policy header</strong><br><span style="color:var(--text2);font-size:13px">Cloudflare Transform Rule → disable unused APIs</span></td>
+    <td><span class="severity-badge medium" style="font-size:10px">Medium</span></td>
+    <td><span class="effort-tag">2 min</span></td>
+    <td style="color:var(--text2)">Restricts browser API access for third-party scripts</td>
+  </tr>
+  <tr>
+    <td><div class="priority-num" style="background:var(--low)">5</div></td>
+    <td><strong style="color:#fff">Verify DKIM configuration</strong><br><span style="color:var(--text2);font-size:13px">Check Tienda Nube email settings or email provider</span></td>
+    <td><span class="severity-badge low" style="font-size:10px">Low</span></td>
+    <td><span class="effort-tag">10 min</span></td>
+    <td style="color:var(--text2)">Ensures email integrity and deliverability</td>
+  </tr>
+</tbody>
+</table>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+  <div style="font-size:40px">⚡</div>
+  <div>
+    <div style="color:#fff;font-weight:700;font-size:16px">All-in-One Cloudflare Fix</div>
+    <p style="color:var(--text2);font-size:14px;margin-top:4px">Since divinohome.com is on Tienda Nube behind Cloudflare, add all missing headers in a single Cloudflare Transform Rule:</p>
+  </div>
+</div>
+<pre style="margin-top:12px">/* Cloudflare Dashboard → Rules → Transform Rules → Modify Response Header */
+
+/* Add these headers (one rule with multiple actions): */
+
+1. X-Frame-Options: SAMEORIGIN
+2. Referrer-Policy: strict-origin-when-cross-origin
+3. Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+
+/* Then add DMARC via DNS → Add Record: */
+
+Type: TXT
+Name: _dmarc
+Content: v=DMARC1; p=none; rua=mailto:dmarc@divinohome.com; fo=1;</pre>
+
+<div class="cta-box">
+  <h3>🎯 After Fixing — Verify Your Improvements</h3>
+  <p>Re-scan your site to confirm all issues are resolved and watch your score jump from C to A!</p>
+  <a href="https://webseccheck.com" class="cta-btn" target="_blank">Scan Again at WebSecCheck.com</a>
+</div>
+
+</section>
+
+<!-- 6. About -->
+<section id="about">
+<div class="section-header">
+  <div class="section-num">06 — About</div>
+  <h2 class="section-title">About WebSecCheck</h2>
+</div>
+<div class="about-grid">
+  <div class="about-card">
+    <div class="about-icon">🔍</div>
+    <h4>16+ Security Checks</h4>
+    <p>Comprehensive analysis covering transport security, HTTP headers, email authentication, and server hardening.</p>
+  </div>
+  <div class="about-card">
+    <div class="about-icon">⚡</div>
+    <h4>Actionable Reports</h4>
+    <p>Every finding includes specific remediation steps with platform-specific guidance for Cloudflare, Tienda Nube, and more.</p>
+  </div>
+  <div class="about-card">
+    <div class="about-icon">📊</div>
+    <h4>Industry Scoring</h4>
+    <p>Weighted scoring aligned with OWASP, NIST, and CIS benchmarks for meaningful security posture assessment.</p>
+  </div>
+  <div class="about-card">
+    <div class="about-icon">🔄</div>
+    <h4>Continuous Monitoring</h4>
+    <p>Schedule recurring scans to track improvements and catch regressions before attackers do.</p>
+  </div>
+</div>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer class="report-footer">
+<div class="container">
+  <div class="footer-brand">Web<span>Sec</span>Check</div>
+  <div class="footer-text">Generated on February 26, 2026 at 13:55 UTC — Report ID: WSC-2026-0226-D1V0</div>
+  <div class="footer-disclaimer">This report reflects the security posture of divinohome.com at the time of scanning. Security is an ongoing process — configurations, vulnerabilities, and best practices change over time. WebSecCheck recommends regular scanning and staying current with security advisories. This report is confidential and intended solely for the domain owner.</div>
+</div>
+</footer>
+
+<div class="watermark">Generated by <span>WebSecCheck</span></div>
+
+<script>
+// Open first finding by default (already has .open class)
+// Toggle others on click via inline onclick handlers
+</script>
+</body>
+</html>

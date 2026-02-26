@@ -22,6 +22,33 @@ const categories = [
   { icon: '⚙️', title: 'CMS Vulnerabilities', desc: 'WordPress, Drupal, Joomla plugin vulnerabilities, outdated versions, and known CVEs.' },
 ]
 
+const testimonials = [
+  {
+    quote: 'WebSecCheck revealed we were missing critical security headers like CSP and X-Frame-Options across our entire platform. We fixed them within hours and avoided what could have been a serious clickjacking vulnerability.',
+    name: 'Marcus Chen',
+    role: 'CTO',
+    company: 'StreamlineOps',
+  },
+  {
+    quote: 'I had no idea our SSL certificate was using an outdated TLS version. The scan flagged it immediately, and the remediation steps were so clear that even my non-technical team could understand the urgency.',
+    name: 'Sarah Lindqvist',
+    role: 'Owner',
+    company: 'NordicCraft Store',
+  },
+  {
+    quote: 'We run every client site through WebSecCheck before launch now. It catches things like open admin panels and missing HSTS headers that manual reviews always miss. It\'s become part of our QA checklist.',
+    name: 'James Okafor',
+    role: 'Founder',
+    company: 'BrightPixel Agency',
+  },
+  {
+    quote: 'What used to take me 2-3 hours of manual security auditing now takes 30 seconds. The detailed breakdown by category makes it easy to prioritize fixes and explain issues to clients.',
+    name: 'Elena Vasquez',
+    role: 'Freelance Web Developer',
+    company: '',
+  },
+]
+
 const stats = [
   { value: '2M+', label: 'Websites Scanned' },
   { value: '45+', label: 'Security Checks' },
@@ -92,6 +119,33 @@ export default function Home() {
                 <div className="text-3xl mb-4">{c.icon}</div>
                 <h3 className="text-lg font-bold text-white mb-2">{c.title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="bg-cyber-blue/50 border-y border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-18">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Trusted by Developers & Teams</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">See what security-conscious professionals say about WebSecCheck.</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            {testimonials.map(t => (
+              <div key={t.name} className="relative card-dark rounded-2xl p-6 border border-white/5 hover:border-cyber-green/20 transition-all">
+                <span className="absolute top-4 right-5 text-5xl font-serif text-cyber-green/10 leading-none select-none">&ldquo;</span>
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-cyber-green" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                  ))}
+                </div>
+                <p className="text-gray-300 text-sm leading-relaxed mb-4">{t.quote}</p>
+                <div>
+                  <span className="text-white font-semibold text-sm">{t.name}</span>
+                  <span className="text-gray-500 text-sm"> — {t.role}{t.company && `, ${t.company}`}</span>
+                </div>
               </div>
             ))}
           </div>

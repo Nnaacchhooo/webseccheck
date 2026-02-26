@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebSecCheck Security Report — opsek.io</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;--green:#00FF41;--green2:#00cc33;--red:#ff4444;--orange:#ff9800;--yellow:#ffd600;--blue:#4fc3f7;--gray:#888;--gray2:#555;--text:#e0e0e0;--text2:#aaa;--border:#2a2a2a;--critical:#ff1744;--high:#ff5252;--medium:#ff9800;--low:#ffd600;--info:#4fc3f7;--pass:#00FF41}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.6;min-height:100vh}
+a{color:var(--green)}
+.container{max-width:1100px;margin:0 auto;padding:0 24px}
+.report-header{background:linear-gradient(135deg,#0a0a0a 0%,#0f1a0f 50%,#0a0a0a 100%);border-bottom:1px solid var(--border);padding:40px 0}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-icon{width:48px;height:48px;border:2px solid var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;background:rgba(0,255,65,.05)}
+.brand h1{font-size:24px;font-weight:700;color:#fff;letter-spacing:-.5px}
+.brand h1 span{color:var(--green)}
+.report-badge{background:linear-gradient(135deg,var(--green),var(--green2));color:#000;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.report-meta{margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.meta-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 18px}
+.meta-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);margin-bottom:4px}
+.meta-value{font-size:15px;color:#fff;font-weight:600;word-break:break-all}
+.meta-value.domain{color:var(--green)}
+.report-nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 0;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.nav-inner{display:flex;gap:4px;overflow-x:auto;padding:0 24px}
+.nav-inner a{color:var(--text2);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:6px;white-space:nowrap;transition:.2s}
+.nav-inner a:hover{color:#fff;background:var(--bg3)}
+section{padding:48px 0;border-bottom:1px solid var(--border)}
+section:last-of-type{border-bottom:none}
+.section-header{margin-bottom:32px}
+.section-num{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--green);font-weight:700;margin-bottom:6px}
+.section-title{font-size:28px;font-weight:700;color:#fff}
+.section-subtitle{color:var(--text2);margin-top:6px;font-size:15px}
+.score-area{display:flex;align-items:center;gap:60px;flex-wrap:wrap;justify-content:center}
+.gauge-wrap{position:relative;width:260px;height:260px;flex-shrink:0}
+.gauge-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge-bg{fill:none;stroke:var(--bg4);stroke-width:18}
+.gauge-fill{fill:none;stroke:var(--orange);stroke-width:18;stroke-linecap:round;stroke-dasharray:691.15;stroke-dashoffset:283.37;transition:stroke-dashoffset 1.5s ease}
+.gauge-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.gauge-score{font-size:72px;font-weight:800;color:#fff;line-height:1}
+.gauge-max{font-size:18px;color:var(--gray);margin-top:2px}
+.gauge-grade{display:inline-block;margin-top:8px;background:var(--orange);color:#fff;font-size:20px;font-weight:800;padding:4px 18px;border-radius:6px;letter-spacing:2px}
+.score-summary{flex:1;min-width:280px}
+.score-summary h3{font-size:20px;color:#fff;margin-bottom:12px}
+.score-summary p{color:var(--text2);margin-bottom:16px;font-size:15px;line-height:1.7}
+.stat-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:20px}
+.stat-box{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 20px;flex:1;min-width:100px;text-align:center}
+.stat-num{font-size:28px;font-weight:800}
+.stat-num.pass{color:var(--pass)}
+.stat-num.fail{color:var(--red)}
+.stat-num.warn{color:var(--orange)}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);margin-top:4px}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.cat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;transition:.2s}
+.cat-card:hover{border-color:var(--gray2)}
+.cat-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.cat-card-title{font-size:16px;font-weight:700;color:#fff}
+.cat-score{font-size:14px;font-weight:700;padding:4px 12px;border-radius:6px}
+.cat-score.good{background:rgba(0,255,65,.1);color:var(--green)}
+.cat-score.bad{background:rgba(255,68,68,.1);color:var(--red)}
+.cat-score.mid{background:rgba(255,152,0,.1);color:var(--orange)}
+.cat-bar{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:16px}
+.cat-bar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.cat-checks{display:flex;flex-direction:column;gap:8px}
+.cat-check{display:flex;align-items:center;gap:10px;font-size:13px}
+.cat-check .icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:700}
+.cat-check .icon.pass{background:rgba(0,255,65,.15);color:var(--green)}
+.cat-check .icon.fail{background:rgba(255,68,68,.15);color:var(--red)}
+.cat-check .icon.warn{background:rgba(255,152,0,.15);color:var(--orange)}
+.finding{background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.finding-header{padding:20px 24px;display:flex;align-items:center;gap:16px;cursor:pointer;flex-wrap:wrap}
+.severity-badge{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;flex-shrink:0}
+.severity-badge.critical{background:rgba(255,23,68,.15);color:var(--critical);border:1px solid rgba(255,23,68,.3)}
+.severity-badge.high{background:rgba(255,82,82,.15);color:var(--high);border:1px solid rgba(255,82,82,.3)}
+.severity-badge.medium{background:rgba(255,152,0,.15);color:var(--medium);border:1px solid rgba(255,152,0,.3)}
+.severity-badge.low{background:rgba(255,214,0,.15);color:var(--low);border:1px solid rgba(255,214,0,.3)}
+.severity-badge.info{background:rgba(79,195,247,.15);color:var(--info);border:1px solid rgba(79,195,247,.3)}
+.severity-badge.pass-badge{background:rgba(0,255,65,.1);color:var(--pass);border:1px solid rgba(0,255,65,.3)}
+.finding-name{font-size:16px;font-weight:700;color:#fff;flex:1}
+.finding-status{font-size:13px;font-weight:700;padding:4px 12px;border-radius:6px}
+.finding-status.pass{background:rgba(0,255,65,.1);color:var(--green)}
+.finding-status.fail{background:rgba(255,68,68,.1);color:var(--red)}
+.finding-status.warn{background:rgba(255,152,0,.1);color:var(--orange)}
+.finding-body{padding:0 24px 24px;display:none}
+.finding.open .finding-body{display:block}
+.finding-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.finding-grid{grid-template-columns:1fr}}
+.finding-section{margin-bottom:16px}
+.finding-section h4{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:8px;font-weight:700}
+.finding-section p,.finding-section li{color:var(--text2);font-size:14px;line-height:1.7}
+.finding-section ul{padding-left:18px}
+.finding-section li{margin-bottom:4px}
+code{background:var(--bg4);color:var(--green);padding:2px 6px;border-radius:4px;font-size:13px;font-family:'SF Mono','Fira Code',monospace}
+pre{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;margin:8px 0;font-size:13px;line-height:1.6;color:var(--green);font-family:'SF Mono','Fira Code',monospace}
+.chevron{color:var(--gray);transition:.2s;font-size:18px;flex-shrink:0}
+.finding.open .chevron{transform:rotate(90deg)}
+.action-table{width:100%;border-collapse:collapse}
+.action-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--gray);padding:12px 16px;border-bottom:1px solid var(--border)}
+.action-table td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:top}
+.action-table tr:last-child td{border-bottom:none}
+.action-table tr:hover td{background:var(--bg3)}
+.priority-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#000}
+.effort-tag{font-size:12px;padding:3px 10px;border-radius:4px;background:var(--bg4);color:var(--text2)}
+.about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.about-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center}
+.about-icon{font-size:32px;margin-bottom:12px}
+.about-card h4{color:#fff;margin-bottom:8px;font-size:16px}
+.about-card p{color:var(--text2);font-size:14px}
+.report-footer{background:var(--bg2);border-top:1px solid var(--border);padding:32px 0;text-align:center}
+.footer-brand{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
+.footer-brand span{color:var(--green)}
+.footer-text{color:var(--gray);font-size:13px}
+.footer-disclaimer{color:var(--gray2);font-size:12px;margin-top:16px;max-width:700px;margin-left:auto;margin-right:auto;line-height:1.6}
+.cta-box{background:linear-gradient(135deg,rgba(0,255,65,.05),rgba(0,255,65,.02));border:1px solid rgba(0,255,65,.2);border-radius:12px;padding:32px;text-align:center;margin-top:32px}
+.cta-box h3{color:#fff;font-size:20px;margin-bottom:8px}
+.cta-box p{color:var(--text2);margin-bottom:20px}
+.cta-btn{display:inline-block;background:var(--green);color:#000;padding:12px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;transition:.2s}
+.cta-btn:hover{background:#00e639;transform:translateY(-1px)}
+.watermark{position:fixed;bottom:20px;right:20px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:11px;color:var(--gray);z-index:50;opacity:.7}
+.watermark span{color:var(--green)}
+@media print{
+  body{background:#fff;color:#222}
+  .report-nav,.watermark,.cta-box{display:none}
+  .finding-body{display:block!important}
+  pre{background:#f5f5f5;color:#222;border-color:#ddd}
+  code{background:#eee;color:#222}
+  .section-title,.finding-name{color:#111}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="report-header">
+<div class="container">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-icon">🛡️</div>
+      <div>
+        <h1>Web<span>Sec</span>Check</h1>
+        <div style="font-size:12px;color:var(--gray);letter-spacing:1px">SECURITY ASSESSMENT REPORT</div>
+      </div>
+    </div>
+    <div class="report-badge">Full Security Audit</div>
+  </div>
+  <div class="report-meta">
+    <div class="meta-item">
+      <div class="meta-label">Target Domain</div>
+      <div class="meta-value domain">opsek.io</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Scan Date</div>
+      <div class="meta-value">February 26, 2026 — 13:55 UTC</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Report ID</div>
+      <div class="meta-value" style="font-family:monospace;font-size:13px">WSC-2026-0226-B9E2</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Overall Grade</div>
+      <div class="meta-value" style="color:var(--orange);font-size:22px">D — 59 / 100</div>
+    </div>
+  </div>
+</div>
+</header>
+
+<!-- Nav -->
+<nav class="report-nav">
+<div class="nav-inner container">
+  <a href="#executive-summary">Executive Summary</a>
+  <a href="#score">Overall Score</a>
+  <a href="#categories">Categories</a>
+  <a href="#findings">Detailed Findings</a>
+  <a href="#action-plan">Action Plan</a>
+  <a href="#about">About</a>
+</div>
+</nav>
+
+<main class="container">
+
+<!-- 1. Executive Summary -->
+<section id="executive-summary">
+<div class="section-header">
+  <div class="section-num">01 — Executive Summary</div>
+  <h2 class="section-title">Security Posture Overview</h2>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <div style="grid-column:1/-1">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;border-left:4px solid var(--orange)">
+      <p style="font-size:16px;color:#fff;font-weight:600;margin-bottom:12px">⚠️ Your website has significant security gaps that need attention.</p>
+      <p style="color:var(--text2);font-size:15px;line-height:1.8"><strong style="color:#fff">opsek.io</strong> scored <strong style="color:var(--orange)">59 out of 100</strong> (Grade D) in our comprehensive security assessment. Your SSL/TLS configuration is excellent (TLS 1.3 with HSTS enabled), and your email authentication is mostly in place with SPF and DKIM configured via Google Workspace. However, <strong style="color:var(--red)">5 critical HTTP security headers are missing</strong>, leaving your site vulnerable to cross-site scripting (XSS), clickjacking, and data exfiltration attacks. Your email authentication is also incomplete — missing DMARC means attackers can still spoof emails from your domain.</p>
+      <p style="color:var(--text2);font-size:15px;line-height:1.8;margin-top:12px">The good news: <strong style="color:var(--green)">all issues can be fixed in under 20 minutes</strong> by adding security headers to your <code>vercel.json</code> or <code>next.config.js</code>, and a single DNS record for DMARC. This report provides step-by-step remediation specific to your Vercel + Next.js stack.</p>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:20px">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:6px">Checks Performed</div>
+    <div style="font-size:32px;font-weight:800;color:#fff">16</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">Across 4 security categories</div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:6px">Critical Issues</div>
+    <div style="font-size:32px;font-weight:800;color:var(--red)">2</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">Require immediate action</div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:6px">Est. Fix Time</div>
+    <div style="font-size:32px;font-weight:800;color:var(--orange)">~20m</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">For all critical + high issues</div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;color:var(--gray);margin-bottom:6px">Scan Time</div>
+    <div style="font-size:32px;font-weight:800;color:var(--green)">1.25s</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px">Completed in 1.25 seconds</div>
+  </div>
+</div>
+</section>
+
+<!-- 2. Score -->
+<section id="score">
+<div class="section-header">
+  <div class="section-num">02 — Overall Score</div>
+  <h2 class="section-title">Security Score</h2>
+  <p class="section-subtitle">Weighted composite of all security checks</p>
+</div>
+<div class="score-area">
+  <div class="gauge-wrap">
+    <svg class="gauge-svg" viewBox="0 0 240 240">
+      <circle class="gauge-bg" cx="120" cy="120" r="110"/>
+      <circle class="gauge-fill" cx="120" cy="120" r="110"/>
+    </svg>
+    <div class="gauge-center">
+      <div class="gauge-score">59</div>
+      <div class="gauge-max">out of 100</div>
+      <div class="gauge-grade">D</div>
+    </div>
+  </div>
+  <div class="score-summary">
+    <h3>What This Score Means</h3>
+    <p>A score of 59 indicates your site has solid foundational security (SSL/TLS, HSTS, email SPF/DKIM) but is <strong style="color:var(--red)">missing most browser-side HTTP security headers</strong>. This puts your users at risk and may affect compliance with standards like PCI-DSS, SOC 2, and GDPR.</p>
+    <p>Sites scoring below 60 are considered <strong>high risk</strong> by security auditors. The good news is that with Vercel + Next.js, adding all missing headers is a single configuration change.</p>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num pass">9</div>
+        <div class="stat-label">Passed</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num fail">6</div>
+        <div class="stat-label">Failed</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num warn">1</div>
+        <div class="stat-label">Warnings</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- 3. Categories -->
+<section id="categories">
+<div class="section-header">
+  <div class="section-num">03 — Category Breakdown</div>
+  <h2 class="section-title">Results by Category</h2>
+</div>
+<div class="cat-grid">
+
+  <!-- Transport Security -->
+  <div class="cat-card">
+    <div class="cat-card-header">
+      <div class="cat-card-title">🔒 Transport Security</div>
+      <div class="cat-score good">100%</div>
+    </div>
+    <div class="cat-bar"><div class="cat-bar-fill" style="width:100%;background:var(--green)"></div></div>
+    <div class="cat-checks">
+      <div class="cat-check"><div class="icon pass">✓</div><span>SSL Certificate — Let's Encrypt R13, valid and trusted</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>Certificate Expiration — 86 days remaining (May 24, 2026)</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>TLS Protocol — TLSv1.3</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>HSTS — Enabled, max-age=63072000 (2 years)</span></div>
+    </div>
+  </div>
+
+  <!-- HTTP Security Headers -->
+  <div class="cat-card">
+    <div class="cat-card-header">
+      <div class="cat-card-title">🛡️ HTTP Security Headers</div>
+      <div class="cat-score bad">0%</div>
+    </div>
+    <div class="cat-bar"><div class="cat-bar-fill" style="width:0%;background:var(--red)"></div></div>
+    <div class="cat-checks">
+      <div class="cat-check"><div class="icon fail">✗</div><span>Content-Security-Policy — Missing</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>X-Frame-Options — Missing</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>X-Content-Type-Options — Missing</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>Referrer-Policy — Missing</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>Permissions-Policy — Missing</span></div>
+    </div>
+  </div>
+
+  <!-- Email Authentication -->
+  <div class="cat-card">
+    <div class="cat-card-header">
+      <div class="cat-card-title">📧 Email Authentication</div>
+      <div class="cat-score mid">67%</div>
+    </div>
+    <div class="cat-bar"><div class="cat-bar-fill" style="width:67%;background:var(--orange)"></div></div>
+    <div class="cat-checks">
+      <div class="cat-check"><div class="icon pass">✓</div><span>SPF — Configured (includes _spf.google.com)</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>DKIM — Found with selector "google"</span></div>
+      <div class="cat-check"><div class="icon fail">✗</div><span>DMARC — Missing</span></div>
+    </div>
+  </div>
+
+  <!-- Server Hardening -->
+  <div class="cat-card">
+    <div class="cat-card-header">
+      <div class="cat-card-title">⚙️ Server Hardening</div>
+      <div class="cat-score mid">75%</div>
+    </div>
+    <div class="cat-bar"><div class="cat-bar-fill" style="width:75%;background:var(--orange)"></div></div>
+    <div class="cat-checks">
+      <div class="cat-check"><div class="icon pass">✓</div><span>Server Version — "Vercel" shown, no version number</span></div>
+      <div class="cat-check"><div class="icon warn">!</div><span>X-Powered-By — Exposes "Next.js"</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>Cookies — No insecure cookies detected</span></div>
+      <div class="cat-check"><div class="icon pass">✓</div><span>CMS Detection — No CMS version exposed</span></div>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- 4. Detailed Findings -->
+<section id="findings">
+<div class="section-header">
+  <div class="section-num">04 — Detailed Findings</div>
+  <h2 class="section-title">Complete Analysis</h2>
+  <p class="section-subtitle">Click any finding to expand full details and remediation steps</p>
+</div>
+
+<!-- Finding: CSP -->
+<div class="finding open">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge critical">Critical</span>
+  <span class="finding-name">Content-Security-Policy (CSP) Header Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The Content-Security-Policy header is not set. CSP is the most powerful browser-side defense against Cross-Site Scripting (XSS) attacks, data injection, and unauthorized resource loading.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>Attackers can inject malicious scripts that steal user data, session tokens, and credentials</li>
+          <li>No protection against inline script execution</li>
+          <li>Third-party resources can be loaded without restriction</li>
+          <li>Data exfiltration via injected content cannot be blocked</li>
+        </ul>
+      </div>
+      <div class="finding-section">
+        <h4>Risk Level</h4>
+        <p><strong style="color:var(--critical)">CRITICAL</strong> — XSS is the #1 web vulnerability (OWASP Top 10). Without CSP, any XSS flaw becomes fully exploitable.</p>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation — vercel.json</h4>
+        <p>Add security headers directly in your Vercel project configuration:</p>
+<pre>{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
+        }
+      ]
+    }
+  ]
+}</pre>
+      </div>
+      <div class="finding-section">
+        <h4>Remediation — next.config.js</h4>
+<pre>// next.config.js
+const cspHeader = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https:",
+  "frame-ancestors 'none'"
+].join('; ');
+
+module.exports = {
+  async headers() {
+    return [{
+      source: '/(.*)',
+      headers: [{
+        key: 'Content-Security-Policy',
+        value: cspHeader
+      }]
+    }];
+  }
+};</pre>
+      </div>
+      <div class="finding-section">
+        <h4>⚡ Quick Start</h4>
+        <p>Start with <code>Content-Security-Policy-Report-Only</code> first to test without breaking your site. Monitor the browser console for violations, then switch to enforcing mode.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: X-Frame-Options -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge critical">Critical</span>
+  <span class="finding-name">X-Frame-Options Header Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The X-Frame-Options header is not present. This header prevents your site from being embedded in iframes on malicious websites, making it vulnerable to clickjacking attacks.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li><strong>Clickjacking attacks:</strong> Attackers overlay invisible iframes of your site, tricking users into clicking buttons/links they can't see</li>
+          <li>Users could unknowingly authorize payments, change settings, or leak data</li>
+          <li>Particularly dangerous for sites with authenticated actions</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation — vercel.json</h4>
+<pre>{
+  "key": "X-Frame-Options",
+  "value": "DENY"
+}</pre>
+        <p style="margin-top:8px">Use <code>SAMEORIGIN</code> instead if you embed your own site in iframes.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Remediation — next.config.js</h4>
+<pre>{ key: 'X-Frame-Options', value: 'DENY' }</pre>
+        <p style="margin-top:8px">Add this to the security headers array (see complete config in Action Plan below).</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: X-Content-Type-Options -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge medium">Medium</span>
+  <span class="finding-name">X-Content-Type-Options Header Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The <code>X-Content-Type-Options: nosniff</code> header is missing. This prevents browsers from MIME-type sniffing, which can turn non-executable MIME types into executable ones.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>Uploaded files could be executed as scripts by the browser</li>
+          <li>MIME confusion attacks possible</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation</h4>
+<pre>{ key: 'X-Content-Type-Options', value: 'nosniff' }</pre>
+        <p style="margin-top:8px">Single value, no configuration needed. Add to your vercel.json or next.config.js headers array.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: Referrer-Policy -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge high">High</span>
+  <span class="finding-name">Referrer-Policy Header Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The Referrer-Policy header is not set. Without it, the browser's default behavior sends the full URL (including query parameters) to third-party sites when users click outbound links.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>Sensitive data in URLs (tokens, user IDs) leaked to third parties</li>
+          <li>Internal URL structure exposed to external analytics</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation</h4>
+<pre>{ key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' }</pre>
+        <p style="margin-top:8px">Add to your vercel.json or next.config.js headers array.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: Permissions-Policy -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge medium">Medium</span>
+  <span class="finding-name">Permissions-Policy Header Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The Permissions-Policy (formerly Feature-Policy) header is not set. This header controls which browser features and APIs can be used on your site.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>Embedded content could access camera, microphone, geolocation</li>
+          <li>Third-party scripts can use powerful browser APIs without restriction</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation</h4>
+<pre>{ key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' }</pre>
+        <p style="margin-top:8px">This disables camera, microphone, geolocation, and FLoC/Topics API for all contexts. Add back specific permissions as needed.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: DMARC -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge high">High</span>
+  <span class="finding-name">DMARC Record Missing</span>
+  <span class="finding-status fail">FAIL</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>No DMARC (Domain-based Message Authentication, Reporting & Conformance) record found at <code>_dmarc.opsek.io</code>. DMARC ties your existing SPF and DKIM together and tells receiving servers what to do with unauthenticated email.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Impact</h4>
+        <ul>
+          <li>Attackers can send phishing emails that appear to come from @opsek.io</li>
+          <li>No visibility into email authentication failures</li>
+          <li>Damages domain reputation and email deliverability</li>
+          <li>Fails Google/Yahoo 2024 sender requirements for bulk senders</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation — DNS Record</h4>
+        <p>Add a TXT record in your DNS provider:</p>
+<pre>Name: _dmarc
+Type: TXT
+Value: v=DMARC1; p=none; rua=mailto:dmarc@opsek.io; ruf=mailto:dmarc@opsek.io; fo=1;</pre>
+        <p style="margin-top:8px">Since you already have SPF and DKIM (Google Workspace) configured, DMARC will immediately start providing value by reporting authentication results.</p>
+      </div>
+      <div class="finding-section">
+        <h4>Progressive Enforcement</h4>
+        <ul>
+          <li><strong>Week 1-4:</strong> <code>p=none</code> — collect reports, verify Google Workspace alignment</li>
+          <li><strong>Week 5-8:</strong> <code>p=quarantine; pct=25</code> — quarantine 25% of failing mail</li>
+          <li><strong>Week 9+:</strong> <code>p=reject</code> — full enforcement</li>
+        </ul>
+        <p style="margin-top:8px"><strong>Google Workspace tip:</strong> Use a free DMARC report analyzer like <a href="https://dmarc.postmarkapp.com" target="_blank">Postmark DMARC</a> to parse the XML reports Google sends.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Finding: X-Powered-By -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge low">Low</span>
+  <span class="finding-name">X-Powered-By Header Exposes Technology</span>
+  <span class="finding-status warn">WARN</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-grid">
+    <div>
+      <div class="finding-section">
+        <h4>Description</h4>
+        <p>The response includes <code>X-Powered-By: Next.js</code>, revealing the application framework. This aids attackers in targeting known Next.js-specific vulnerabilities.</p>
+      </div>
+    </div>
+    <div>
+      <div class="finding-section">
+        <h4>Remediation — next.config.js</h4>
+<pre>// next.config.js
+module.exports = {
+  poweredByHeader: false,
+  // ... other config
+};</pre>
+      </div>
+      <div class="finding-section">
+        <h4>Remediation — vercel.json</h4>
+        <p>Alternatively, remove it via Vercel headers config:</p>
+<pre>{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Powered-By",
+          "value": ""
+        }
+      ]
+    }
+  ]
+}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Passing findings -->
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">SSL Certificate Validity</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ Valid certificate issued by <strong>Let's Encrypt (R13)</strong> using <strong>TLS 1.3</strong>. Certificate is valid and trusted by all major browsers and operating systems.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">SSL Certificate Expiration</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ Certificate expires <strong>May 24, 2026</strong> — <strong>86 days remaining</strong>. Auto-renewal is managed by Vercel, so no manual intervention is needed.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">TLS Protocol Version</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ Using <strong>TLSv1.3</strong> — the latest and most secure TLS protocol. Provides improved performance and stronger encryption compared to TLS 1.2.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">HTTP Strict Transport Security (HSTS)</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ HSTS is enabled with <code>max-age=63072000</code> (2 years). This forces browsers to always use HTTPS, preventing SSL-stripping and downgrade attacks. Excellent configuration.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">SPF Record</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ SPF record found and properly configured. Includes <code>_spf.google.com</code> for Google Workspace email sending, along with multiple verification records. Unauthorized senders will be flagged.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">DKIM Record</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ DKIM record found with selector <code>google</code>, confirming Google Workspace DKIM signing is properly configured. Outgoing emails are cryptographically signed to prove integrity.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">Server Version Disclosure</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ Server header shows <code>Vercel</code> with no version number. The hosting platform is identified but no exploitable version information is exposed.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">Cookie Security</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ No insecure cookies detected. No cookies are missing Secure, HttpOnly, or SameSite attributes.</p>
+  </div>
+</div>
+</div>
+
+<div class="finding">
+<div class="finding-header" onclick="this.parentElement.classList.toggle('open')">
+  <span class="severity-badge pass-badge">Pass</span>
+  <span class="finding-name">CMS Version Detection</span>
+  <span class="finding-status pass">PASS</span>
+  <span class="chevron">›</span>
+</div>
+<div class="finding-body">
+  <div class="finding-section">
+    <h4>Details</h4>
+    <p>✅ No CMS version information exposed in HTML source, meta tags, or response headers.</p>
+  </div>
+</div>
+</div>
+
+</section>
+
+<!-- 5. Action Plan -->
+<section id="action-plan">
+<div class="section-header">
+  <div class="section-num">05 — Priority Action Plan</div>
+  <h2 class="section-title">Recommended Fix Order</h2>
+  <p class="section-subtitle">Ordered by impact and effort — fix the most critical issues first</p>
+</div>
+
+<div style="overflow-x:auto">
+<table class="action-table">
+<thead>
+  <tr>
+    <th>#</th>
+    <th>Action</th>
+    <th>Severity</th>
+    <th>Effort</th>
+    <th>Impact</th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td><div class="priority-num" style="background:var(--critical)">1</div></td>
+    <td><strong style="color:#fff">Add all security headers (CSP, X-Frame-Options, etc.)</strong><br><span style="color:var(--text2);font-size:13px">Single change in vercel.json or next.config.js — see complete config below</span></td>
+    <td><span class="severity-badge critical" style="font-size:10px">Critical</span></td>
+    <td><span class="effort-tag">10 min</span></td>
+    <td style="color:var(--text2)">Fixes 5 of 6 failures — XSS, clickjacking, MIME sniffing protection</td>
+  </tr>
+  <tr>
+    <td><div class="priority-num" style="background:var(--high)">2</div></td>
+    <td><strong style="color:#fff">Add DMARC DNS record</strong><br><span style="color:var(--text2);font-size:13px">TXT record at _dmarc.opsek.io — completes your email auth trio (SPF + DKIM + DMARC)</span></td>
+    <td><span class="severity-badge high" style="font-size:10px">High</span></td>
+    <td><span class="effort-tag">5 min</span></td>
+    <td style="color:var(--text2)">Prevents email spoofing from @opsek.io</td>
+  </tr>
+  <tr>
+    <td><div class="priority-num" style="background:var(--low)">3</div></td>
+    <td><strong style="color:#fff">Remove X-Powered-By header</strong><br><span style="color:var(--text2);font-size:13px">Set poweredByHeader: false in next.config.js</span></td>
+    <td><span class="severity-badge low" style="font-size:10px">Low</span></td>
+    <td><span class="effort-tag">1 min</span></td>
+    <td style="color:var(--text2)">Reduces information leakage</td>
+  </tr>
+</tbody>
+</table>
+</div>
+
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+  <div style="font-size:40px">⚡</div>
+  <div>
+    <div style="color:#fff;font-weight:700;font-size:16px">All-in-One Fix for Vercel + Next.js</div>
+    <p style="color:var(--text2);font-size:14px;margin-top:4px">Add all security headers at once. Choose either <code>next.config.js</code> (recommended) or <code>vercel.json</code>:</p>
+  </div>
+</div>
+
+<p style="color:var(--green);font-weight:700;margin-top:20px;font-size:13px;text-transform:uppercase;letter-spacing:1px">Option A — next.config.js (Recommended)</p>
+<pre style="margin-top:8px">// next.config.js — Complete Security Headers for opsek.io
+const securityHeaders = [
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
+  {
+    key: 'Content-Security-Policy',
+    value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
+  },
+];
+
+module.exports = {
+  poweredByHeader: false,  // Removes X-Powered-By: Next.js
+  async headers() {
+    return [{ source: '/(.*)', headers: securityHeaders }];
+  },
+};</pre>
+
+<p style="color:var(--green);font-weight:700;margin-top:20px;font-size:13px;text-transform:uppercase;letter-spacing:1px">Option B — vercel.json</p>
+<pre style="margin-top:8px">{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';" }
+      ]
+    }
+  ]
+}</pre>
+
+<p style="color:var(--green);font-weight:700;margin-top:20px;font-size:13px;text-transform:uppercase;letter-spacing:1px">DMARC DNS Record</p>
+<pre style="margin-top:8px">Name: _dmarc.opsek.io
+Type: TXT
+Value: v=DMARC1; p=none; rua=mailto:dmarc@opsek.io; ruf=mailto:dmarc@opsek.io; fo=1;</pre>
+
+<div class="cta-box">
+  <h3>🎯 After Fixing — Verify Your Improvements</h3>
+  <p>Re-scan your site to confirm all issues are resolved and see your new score. With all fixes applied, expect a score of <strong>95+</strong>.</p>
+  <a href="https://webseccheck.com" class="cta-btn" target="_blank">Scan Again at WebSecCheck.com</a>
+</div>
+
+</section>
+
+<!-- 6. About -->
+<section id="about">
+<div class="section-header">
+  <div class="section-num">06 — About</div>
+  <h2 class="section-title">About WebSecCheck</h2>
+</div>
+<div class="about-grid">
+  <div class="about-card">
+    <div class="about-icon">🔍</div>
+    <h4>16+ Security Checks</h4>
+    <p>Comprehensive analysis covering transport security, HTTP headers, email authentication, and server hardening.</p>
+  </div>
+  <div class="about-card">
+    <div class="about-icon">⚡</div>
+    <h4>Actionable Reports</h4>
+    <p>Every finding includes specific remediation steps with code examples for your exact technology stack.</p>
+  </div>
+  <div class="about-card">
+    <div class="about-icon">📊</div>
+    <h4>Industry Scoring</h4>
+    <p>Weighted scoring aligned with OWASP, NIST, and CIS benchmarks for meaningful security posture assessment.</p>
+  </div>
+  <div class="about-card">
+    <div class="about-icon">🔄</div>
+    <h4>Continuous Monitoring</h4>
+    <p>Schedule recurring scans to track improvements and catch regressions before attackers do.</p>
+  </div>
+</div>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer class="report-footer">
+<div class="container">
+  <div class="footer-brand">Web<span>Sec</span>Check</div>
+  <div class="footer-text">Generated on February 26, 2026 at 13:55 UTC — Report ID: WSC-2026-0226-B9E2</div>
+  <div class="footer-disclaimer">This report reflects the security posture of opsek.io at the time of scanning. Security is an ongoing process — configurations, vulnerabilities, and best practices change over time. WebSecCheck recommends regular scanning and staying current with security advisories. This report is confidential and intended solely for the domain owner.</div>
+</div>
+</footer>
+
+<div class="watermark">Generated by <span>WebSecCheck</span></div>
+
+<script>
+// Toggle findings on click via inline onclick handlers
+</script>
+</body>
+</html>

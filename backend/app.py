@@ -8,9 +8,12 @@ from urllib.parse import urlparse
 import aiohttp
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
 from checks import ssl_tls, http_headers, dns_records, server_exposure, cookies, cms_detection
+from report_generator import generate_pdf, mixed_content, redirects
 
 app = FastAPI(
     title="WebSecCheck API",
@@ -25,6 +28,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/report/{name}", response_class=HTMLResponse)
+async def serve_report(name: str):
+    """Serve report pages."""
+    import os, re
+    if not re.match(r'^[a-zA-Z0-9_-]+$', name):
+        return HTMLResponse(content="Invalid report name", status_code=400)
+    path = os.path.join(os.path.dirname(__file__), "static", f"report-{name}.html")
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="Report not found", status_code=404)
+
+@app.get("/report-demo", response_class=HTMLResponse)
+async def report_demo():
+    """Redirect old URL."""
+    import os
+    path = os.path.join(os.path.dirname(__file__), "static", "report-demo.html")
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="Report not found", status_code=404)
 
 
 class ScanRequest(BaseModel):
@@ -125,6 +151,8 @@ async def scan(request: ScanRequest):
                 server_exposure.run_all(headers),
                 cookies.run_all(raw_cookies),
                 cms_detection.run_all(body, headers),
+                mixed_content.run_all(body, url),
+                redirects.run_all(headers, url),
                 return_exceptions=True,
             ),
             timeout=25,
@@ -164,6 +192,45 @@ async def scan(request: ScanRequest):
         passed=passed,
         warnings=warnings,
         failed=failed,
+    )
+
+
+class ReportRequest(BaseModel):
+    url: str
+    email: str = ""
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, v: str) -> str:
+        v = v.strip()
+        if not v.startswith(("http://", "https://")):
+            v = f"https://{v}"
+        parsed = urlparse(v)
+        if not parsed.hostname:
+            raise ValueError("Invalid URL")
+        return v
+
+
+@app.post("/report")
+async def report(request: ReportRequest):
+    """Run a scan and generate a professional PDF security report."""
+    # Run the scan
+    scan_req = ScanRequest(url=request.url)
+    scan_result = await scan(scan_req)
+
+    # Convert to dict for the PDF generator
+    scan_dict = scan_result.model_dump()
+
+    # Generate PDF
+    pdf_bytes = generate_pdf(scan_dict)
+
+    hostname = scan_dict["hostname"].replace(".", "_")
+    filename = f"webseccheck_{hostname}_report.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
 

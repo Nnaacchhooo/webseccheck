@@ -40,7 +40,7 @@ async def check_spf(domain: str) -> Dict[str, Any]:
 
 async def check_dmarc(domain: str) -> Dict[str, Any]:
     txt = await _query_txt(domain, "_dmarc")
-    if "v=DMARC1" in txt.upper():
+    if "V=DMARC1" in txt.upper():
         return {
             "id": "dns_dmarc",
             "name": "DMARC Record",

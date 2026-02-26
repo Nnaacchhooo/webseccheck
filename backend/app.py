@@ -14,6 +14,9 @@ from pydantic import BaseModel, field_validator
 
 from checks import ssl_tls, http_headers, dns_records, server_exposure, cookies, cms_detection, mixed_content, redirects
 from report_generator import generate_pdf
+from token_manager import generate_token, validate_token
+from email_sender import send_report_email
+from report_html import generate_report_html
 
 app = FastAPI(
     title="WebSecCheck API",
@@ -30,16 +33,23 @@ app.add_middleware(
 )
 
 
-@app.get("/report/{name}", response_class=HTMLResponse)
-async def serve_report(name: str):
-    """Serve report pages."""
+@app.get("/report/{token}", response_class=HTMLResponse)
+async def serve_report(token: str):
+    """Serve report pages — either token-based dynamic reports or legacy static ones."""
     import os, re
-    if not re.match(r'^[a-zA-Z0-9_-]+$', name):
-        return HTMLResponse(content="Invalid report name", status_code=400)
-    path = os.path.join(os.path.dirname(__file__), "static", f"report-{name}.html")
-    if os.path.exists(path):
-        with open(path, "r") as f:
-            return HTMLResponse(content=f.read())
+    # First check if it's a legacy static report name
+    if re.match(r'^[a-zA-Z0-9_-]{1,30}$', token) and not any(c in token for c in '._'):
+        path = os.path.join(os.path.dirname(__file__), "static", f"report-{token}.html")
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                return HTMLResponse(content=f.read())
+    
+    # Try as a token-based report
+    token_data = validate_token(token)
+    if token_data:
+        html_content = generate_report_html(token_data["scan_data"])
+        return HTMLResponse(content=html_content)
+    
     return HTMLResponse(content="Report not found", status_code=404)
 
 @app.get("/report-demo", response_class=HTMLResponse)
@@ -213,20 +223,46 @@ class ReportRequest(BaseModel):
 
 @app.post("/report")
 async def report(request: ReportRequest):
-    """Run a scan and generate a professional PDF security report."""
+    """Run a scan, generate token, and email the report link."""
+    if not request.email:
+        raise HTTPException(status_code=400, detail="Email is required to receive the report.")
+
     # Run the scan
     scan_req = ScanRequest(url=request.url)
     scan_result = await scan(scan_req)
-
-    # Convert to dict for the PDF generator
     scan_dict = scan_result.model_dump()
 
-    # Generate PDF
-    pdf_bytes = generate_pdf(scan_dict)
+    # Generate token and store scan results
+    token = generate_token(request.email, scan_dict)
 
+    # Send email with report link
+    email_sent = send_report_email(
+        to_email=request.email,
+        token=token,
+        hostname=scan_dict["hostname"],
+        score=scan_dict["score"],
+        grade=scan_dict["grade"],
+    )
+
+    return {
+        "status": "success",
+        "message": f"Report link sent to {request.email}",
+        "email_sent": email_sent,
+        "token": token,
+        "score": scan_dict["score"],
+        "grade": scan_dict["grade"],
+    }
+
+
+@app.post("/report/pdf")
+async def report_pdf(request: ReportRequest):
+    """Generate a PDF report (legacy/VIP endpoint)."""
+    scan_req = ScanRequest(url=request.url)
+    scan_result = await scan(scan_req)
+    scan_dict = scan_result.model_dump()
+    pdf_bytes = generate_pdf(scan_dict)
     hostname = scan_dict["hostname"].replace(".", "_")
     filename = f"webseccheck_{hostname}_report.pdf"
-
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",

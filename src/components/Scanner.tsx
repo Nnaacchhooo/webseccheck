@@ -40,9 +40,12 @@ const statusIcon: Record<string, { icon: string; color: string }> = {
 
 export default function Scanner() {
   const [url, setUrl] = useState('')
+  const [email, setEmail] = useState('')
   const [scanning, setScanning] = useState(false)
   const [result, setResult] = useState<ScanResult | null>(null)
   const [error, setError] = useState('')
+  const [reportStatus, setReportStatus] = useState<{ sent: boolean; email: string; grade: string; score: number } | null>(null)
+  const [ordering, setOrdering] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,6 +73,32 @@ export default function Scanner() {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.')
     } finally {
       setScanning(false)
+    }
+  }
+
+  const handleOrderReport = async () => {
+    if (!email.trim() || !url.trim()) {
+      setError('Please enter your email address to receive the report.')
+      return
+    }
+    setOrdering(true)
+    setError('')
+    try {
+      const res = await fetch(`${API_URL}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.trim(), email: email.trim() }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Failed to generate report' }))
+        throw new Error(err.detail || 'Failed to generate report')
+      }
+      const data = await res.json()
+      setReportStatus({ sent: true, email: email.trim(), grade: data.grade, score: data.score })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred.')
+    } finally {
+      setOrdering(false)
     }
   }
 
@@ -191,13 +220,42 @@ export default function Scanner() {
 
           {/* CTA for paid report */}
           <div className="p-4 sm:p-6 rounded-xl bg-gradient-to-r from-cyber-green/10 to-cyan-500/10 border border-cyber-green/20 text-center">
-            <h3 className="text-white font-bold text-base sm:text-lg mb-1 sm:mb-2">Want the full picture?</h3>
-            <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">
-              Get a detailed security report with 45+ checks, remediation steps, and priority action plan.
-            </p>
-            <button className="gradient-cta text-black font-bold px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-all text-sm">
-              Get Full Report — $49
-            </button>
+            {reportStatus?.sent ? (
+              <>
+                <div className="text-3xl mb-2">📧</div>
+                <h3 className="text-white font-bold text-base sm:text-lg mb-1 sm:mb-2">Report Sent!</h3>
+                <p className="text-gray-400 text-xs sm:text-sm mb-2">
+                  Your full security report has been sent to <span className="text-cyber-green font-semibold">{reportStatus.email}</span>
+                </p>
+                <p className="text-gray-500 text-xs">
+                  Score: {reportStatus.score}/100 · Grade: {reportStatus.grade} · Check your inbox (and spam folder)
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-white font-bold text-base sm:text-lg mb-1 sm:mb-2">Want the full picture?</h3>
+                <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">
+                  Get a detailed security report with remediation steps, priority action plan, and code examples.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto mb-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="flex-1 px-4 py-2.5 bg-cyber-gray border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyber-green/50 text-sm"
+                  />
+                  <button
+                    onClick={handleOrderReport}
+                    disabled={ordering}
+                    className="gradient-cta text-black font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all text-sm whitespace-nowrap disabled:opacity-50"
+                  >
+                    {ordering ? 'Generating...' : 'Get Full Report — $49'}
+                  </button>
+                </div>
+                <p className="text-gray-600 text-[10px]">Report link will be emailed to you instantly</p>
+              </>
+            )}
           </div>
         </div>
       )}

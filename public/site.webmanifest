@@ -1,0 +1,16 @@
+{
+  "name": "WebSecCheck",
+  "short_name": "WebSecCheck",
+  "description": "Enterprise-grade web security scanning. OWASP Top 10 checks, vulnerability detection, and remediation guidance.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#00e5ff",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

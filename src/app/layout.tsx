@@ -9,6 +9,12 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'WebSecCheck — How Secure Is Your Website?',
   description: 'Enterprise-grade web security scanning. OWASP Top 10 checks, vulnerability detection, and remediation guidance. Free instant scan.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+  },
+  manifest: '/site.webmanifest',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -15,7 +15,7 @@ from pydantic import BaseModel, field_validator
 from checks import ssl_tls, http_headers, dns_records, server_exposure, cookies, cms_detection, mixed_content, redirects
 from report_generator import generate_pdf
 from token_manager import generate_token, validate_token
-from email_sender import send_report_email, send_scan_alert
+from email_sender import send_report_email, send_scan_alert, RESEND_API_KEY, FROM_EMAIL
 from report_html import generate_report_html
 import os
 from fastapi import Request, Depends
@@ -358,3 +358,62 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+class ContactRequest(BaseModel):
+    name: str
+    email: str
+    subject: str
+    message: str
+    turnstile_token: str
+
+
+@app.post("/contact")
+async def contact(request: ContactRequest, raw_request: Request = None):
+    """Handle contact form with Turnstile verification."""
+    import requests as req
+    # Verify Turnstile token
+    TURNSTILE_SECRET = os.environ.get("TURNSTILE_SECRET", "0x4AAAAAACjW7E94djEA1arV0WKbLRul2nE")
+    ip = ""
+    if raw_request:
+        ip = raw_request.headers.get("x-forwarded-for", raw_request.client.host if raw_request.client else "")
+    
+    verify = req.post("https://challenges.cloudflare.com/turnstile/v0/siteverify", json={
+        "secret": TURNSTILE_SECRET,
+        "response": request.turnstile_token,
+        "remoteip": ip,
+    }, timeout=10)
+    
+    if not verify.json().get("success"):
+        raise HTTPException(status_code=400, detail="Captcha verification failed. Please try again.")
+    
+    # Send contact email to admin
+    ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "pablo.sonder@gmail.com")
+    try:
+        req.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": FROM_EMAIL,
+                "to": [ALERT_EMAIL],
+                "reply_to": request.email,
+                "subject": f"📩 Contact: {request.subject} — {request.name}",
+                "html": f"""<div style="font-family:sans-serif;background:#0a0a0a;color:#ccc;padding:30px;">
+                    <h2 style="color:#00FF41;">New Contact Form Submission</h2>
+                    <p><strong>Name:</strong> {request.name}</p>
+                    <p><strong>Email:</strong> {request.email}</p>
+                    <p><strong>Subject:</strong> {request.subject}</p>
+                    <p><strong>Message:</strong></p>
+                    <div style="background:#111;padding:16px;border-radius:8px;border:1px solid #333;">{request.message}</div>
+                    <p style="color:#666;font-size:12px;margin-top:20px;">IP: {ip}</p>
+                </div>""",
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        print(f"Contact email error: {e}")
+    
+    return {"status": "success", "message": "Message received. We'll get back to you within 24 hours."}

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebSecCheck Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e17;color:#c0c0c0;font-family:'Courier New',monospace;min-height:100vh}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.login-box{background:#111827;border:1px solid #00ff41;padding:40px;border-radius:8px;text-align:center}
+.login-box h1{color:#00ff41;margin-bottom:20px;font-size:1.5em}
+.login-box input{background:#0a0e17;border:1px solid #333;color:#00ff41;padding:10px 15px;width:300px;font-family:inherit;border-radius:4px}
+.login-box button{background:#00ff41;color:#0a0e17;border:none;padding:10px 30px;margin-top:15px;cursor:pointer;font-family:inherit;font-weight:bold;border-radius:4px}
+.login-box button:hover{background:#00cc33}
+.app{display:none}
+nav{background:#111827;border-bottom:1px solid #1a2332;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+nav .brand{color:#00ff41;font-size:1.2em;font-weight:bold}
+nav .tabs a{color:#666;text-decoration:none;margin-left:20px;cursor:pointer;padding:4px 0;border-bottom:2px solid transparent}
+nav .tabs a.active{color:#00ff41;border-color:#00ff41}
+nav .tabs a:hover{color:#00ff41}
+.logout{color:#ff4444;cursor:pointer;font-size:.85em}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:#111827;border:1px solid #1a2332;border-radius:8px;padding:20px;text-align:center}
+.stat-card .value{font-size:2em;color:#00ff41;font-weight:bold}
+.stat-card .label{color:#666;margin-top:4px;font-size:.85em}
+.panel{display:none}
+.panel.active{display:block}
+table{width:100%;border-collapse:collapse;background:#111827;border-radius:8px;overflow:hidden;margin-top:16px}
+th{background:#1a2332;color:#00ff41;padding:10px 12px;text-align:left;font-size:.8em;text-transform:uppercase}
+td{padding:10px 12px;border-top:1px solid #1a2332;font-size:.85em}
+tr:hover td{background:#1a2332}
+.grade{font-weight:bold;padding:2px 8px;border-radius:4px}
+.grade-A{color:#00ff41}.grade-B{color:#7fff00}.grade-C{color:#ffaa00}.grade-D{color:#ff6600}.grade-F{color:#ff0000}
+.filter-bar{margin-bottom:16px}
+.filter-bar input{background:#111827;border:1px solid #333;color:#00ff41;padding:8px 12px;width:300px;font-family:inherit;border-radius:4px}
+.pagination{display:flex;gap:10px;margin-top:16px;align-items:center;color:#666}
+.pagination button{background:#1a2332;color:#00ff41;border:1px solid #333;padding:6px 14px;cursor:pointer;font-family:inherit;border-radius:4px}
+.pagination button:disabled{opacity:.3;cursor:default}
+.chart-wrap{background:#111827;border:1px solid #1a2332;border-radius:8px;padding:20px;margin-bottom:24px}
+.chart-wrap h3{color:#00ff41;margin-bottom:12px;font-size:.9em}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:120px}
+.bar{background:#00ff41;min-width:12px;border-radius:2px 2px 0 0;position:relative;cursor:default}
+.bar:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#000;color:#00ff41;padding:4px 8px;border-radius:4px;font-size:.7em;white-space:nowrap}
+.error{color:#ff4444;padding:20px;text-align:center}
+#scanDetail{background:#111827;border:1px solid #1a2332;border-radius:8px;padding:20px;margin-top:16px}
+#scanDetail h3{color:#00ff41;margin-bottom:12px}
+#scanDetail .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px}
+#scanDetail .meta div{color:#888;font-size:.85em}
+#scanDetail .meta span{color:#c0c0c0}
+.check-item{padding:6px 0;border-bottom:1px solid #1a2332;font-size:.85em;display:flex;gap:8px}
+.check-pass{color:#00ff41}.check-warn{color:#ffaa00}.check-fail{color:#ff4444}
+.back-btn{color:#00ff41;cursor:pointer;margin-bottom:12px;display:inline-block;font-size:.85em}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <h1>🔒 WebSecCheck Admin</h1>
+    <p style="color:#666;margin-bottom:20px">Enter admin key</p>
+    <input type="password" id="keyInput" placeholder="Admin API Key" onkeydown="if(event.key==='Enter')doLogin()">
+    <br><button onclick="doLogin()">Access</button>
+    <p id="loginErr" style="color:#ff4444;margin-top:10px"></p>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <nav>
+    <span class="brand">⚡ WebSecCheck Admin</span>
+    <div class="tabs">
+      <a class="active" onclick="showPanel('dashboard',this)">Dashboard</a>
+      <a onclick="showPanel('scans',this)">Scans</a>
+      <a onclick="showPanel('reports',this)">Reports</a>
+    </div>
+    <span class="logout" onclick="doLogout()">Logout</span>
+  </nav>
+  <div class="container">
+    <div class="panel active" id="p-dashboard">
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="chart-wrap"><h3>Scans per Day (last 30 days)</h3><div class="bar-chart" id="chart"></div></div>
+      <div class="chart-wrap"><h3>Top Domains</h3><div id="topDomains"></div></div>
+    </div>
+    <div class="panel" id="p-scans">
+      <div class="filter-bar"><input id="domainFilter" placeholder="Filter by domain..." oninput="debounceScans()"></div>
+      <div id="scansContent"></div>
+    </div>
+    <div class="panel" id="p-reports">
+      <div id="reportsContent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let KEY = localStorage.getItem('wsc_admin_key') || '';
+let scansPage = 1, reportsPage = 1, debounceTimer;
+
+function headers() { return { 'X-Admin-Key': KEY, 'Content-Type': 'application/json' }; }
+
+async function api(path) {
+  const r = await fetch(API + path, { headers: headers() });
+  if (r.status === 403) { doLogout(); throw new Error('Unauthorized'); }
+  return r.json();
+}
+
+async function doLogin() {
+  KEY = document.getElementById('keyInput').value;
+  try {
+    await api('/admin/stats');
+    localStorage.setItem('wsc_admin_key', KEY);
+    showApp();
+  } catch(e) { document.getElementById('loginErr').textContent = 'Invalid key'; }
+}
+
+function doLogout() {
+  KEY = ''; localStorage.removeItem('wsc_admin_key');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginWrap').style.display = 'flex';
+}
+
+async function showApp() {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadDashboard();
+}
+
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav .tabs a').forEach(a => a.classList.remove('active'));
+  document.getElementById('p-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'scans') { scansPage = 1; loadScans(); }
+  if (name === 'reports') { reportsPage = 1; loadReports(); }
+}
+
+async function loadDashboard() {
+  try {
+    const s = await api('/admin/stats');
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="value">${s.total_scans}</div><div class="label">Total Scans</div></div>
+      <div class="stat-card"><div class="value">${s.total_reports}</div><div class="label">Total Reports</div></div>
+      <div class="stat-card"><div class="value">${s.scans_per_day.length > 0 ? s.scans_per_day[0].count : 0}</div><div class="label">Scans Today</div></div>
+      <div class="stat-card"><div class="value">${s.top_domains.length}</div><div class="label">Unique Domains</div></div>`;
+    // Chart
+    const days = s.scans_per_day.slice().reverse();
+    const max = Math.max(...days.map(d => d.count), 1);
+    document.getElementById('chart').innerHTML = days.map(d =>
+      `<div class="bar" style="height:${(d.count/max)*100}%;flex:1" data-tip="${d.day}: ${d.count}"></div>`
+    ).join('');
+    // Top domains
+    document.getElementById('topDomains').innerHTML = '<table><tr><th>Domain</th><th>Scans</th></tr>' +
+      s.top_domains.map(d => `<tr><td>${esc(d.hostname)}</td><td>${d.count}</td></tr>`).join('') + '</table>';
+  } catch(e) {}
+}
+
+function debounceScans() { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { scansPage = 1; loadScans(); }, 300); }
+
+async function loadScans() {
+  const host = document.getElementById('domainFilter').value;
+  const q = host ? `&hostname=${encodeURIComponent(host)}` : '';
+  const d = await api(`/admin/scans?page=${scansPage}&limit=30${q}`);
+  let h = '<table><tr><th>#</th><th>Domain</th><th>Score</th><th>Grade</th><th>Checks</th><th>Time</th><th>Date</th></tr>';
+  d.scans.forEach(s => {
+    h += `<tr style="cursor:pointer" onclick="loadScanDetail(${s.id})">
+      <td>${s.id}</td><td>${esc(s.hostname)}</td><td>${s.score}</td>
+      <td><span class="grade grade-${s.grade}">${s.grade}</span></td>
+      <td>✅${s.passed} ⚠️${s.warnings} ❌${s.failed}</td>
+      <td>${s.scan_time_seconds}s</td><td>${s.created_at||''}</td></tr>`;
+  });
+  h += '</table>';
+  h += `<div class="pagination">
+    <button ${scansPage<=1?'disabled':''} onclick="scansPage--;loadScans()">← Prev</button>
+    <span>Page ${scansPage} / ${Math.ceil(d.total/30)||1}</span>
+    <button ${scansPage*30>=d.total?'disabled':''} onclick="scansPage++;loadScans()">Next →</button></div>`;
+  document.getElementById('scansContent').innerHTML = h;
+}
+
+async function loadScanDetail(id) {
+  const s = await api('/admin/scans/' + id);
+  if (!s) return;
+  const checks = JSON.parse(s.checks || '[]');
+  let h = `<span class="back-btn" onclick="loadScans()">← Back to list</span>
+    <div id="scanDetail"><h3>Scan #${s.id} — ${esc(s.hostname)}</h3>
+    <div class="meta">
+      <div>URL: <span>${esc(s.url)}</span></div>
+      <div>Score: <span>${s.score} (${s.grade})</span></div>
+      <div>Time: <span>${s.scan_time_seconds}s</span></div>
+      <div>IP: <span>${esc(s.ip_address||'—')}</span></div>
+      <div>UA: <span>${esc(s.user_agent||'—')}</span></div>
+      <div>Date: <span>${s.created_at}</span></div>
+    </div>
+    <h3>Checks (${checks.length})</h3>`;
+  checks.forEach(c => {
+    h += `<div class="check-item"><span class="check-${c.status}">[${c.status.toUpperCase()}]</span> <strong>${esc(c.name)}</strong> — ${esc(c.description)}</div>`;
+  });
+  h += '</div>';
+  document.getElementById('scansContent').innerHTML = h;
+}
+
+async function loadReports() {
+  const d = await api(`/admin/reports?page=${reportsPage}&limit=30`);
+  let h = '<table><tr><th>#</th><th>Scan ID</th><th>Email</th><th>Token</th><th>Date</th></tr>';
+  d.reports.forEach(r => {
+    h += `<tr><td>${r.id}</td><td>${r.scan_id||'—'}</td><td>${esc(r.email)}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${esc(r.token||'')}</td><td>${r.created_at||''}</td></tr>`;
+  });
+  h += '</table>';
+  h += `<div class="pagination">
+    <button ${reportsPage<=1?'disabled':''} onclick="reportsPage--;loadReports()">← Prev</button>
+    <span>Page ${reportsPage} / ${Math.ceil(d.total/30)||1}</span>
+    <button ${reportsPage*30>=d.total?'disabled':''} onclick="reportsPage++;loadReports()">Next →</button></div>`;
+  document.getElementById('reportsContent').innerHTML = h;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+// Auto-login if key stored
+if (KEY) { api('/admin/stats').then(() => showApp()).catch(() => {}); }
+</script>
+</body>
+</html>

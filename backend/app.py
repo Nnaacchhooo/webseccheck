@@ -17,6 +17,11 @@ from report_generator import generate_pdf
 from token_manager import generate_token, validate_token
 from email_sender import send_report_email
 from report_html import generate_report_html
+import os
+from fastapi import Request, Depends
+
+import db
+
 
 app = FastAPI(
     title="WebSecCheck API",
@@ -31,6 +36,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize database
+db.init_db()
+
+ADMIN_KEY = os.environ.get("ADMIN_API_KEY", "")
+
+
+def verify_admin(request: Request):
+    key = request.headers.get("X-Admin-Key", "")
+    if not ADMIN_KEY or key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
 
 
 @app.get("/report/{token}", response_class=HTMLResponse)
@@ -137,7 +154,7 @@ async def fetch_site(url: str) -> tuple[dict, list, str]:
 
 
 @app.post("/scan", response_model=ScanResponse)
-async def scan(request: ScanRequest):
+async def scan(request: ScanRequest, raw_request: Request = None):
     start = time.time()
     url = request.url
     parsed = urlparse(url)
@@ -191,7 +208,7 @@ async def scan(request: ScanRequest):
     warnings = sum(1 for c in checks if c["status"] == "warn")
     failed = sum(1 for c in checks if c["status"] == "fail")
 
-    return ScanResponse(
+    result = ScanResponse(
         url=url,
         hostname=hostname,
         score=score,
@@ -203,6 +220,21 @@ async def scan(request: ScanRequest):
         warnings=warnings,
         failed=failed,
     )
+
+    # Save to database
+    try:
+        ip = ""
+        ua = ""
+        if raw_request:
+            ip = raw_request.headers.get("x-forwarded-for", raw_request.client.host if raw_request.client else "")
+            ua = raw_request.headers.get("user-agent", "")
+        scan_id = db.save_scan(result.model_dump(), ip, ua)
+        if raw_request:
+            raw_request.state.last_scan_id = scan_id
+    except Exception:
+        pass
+
+    return result
 
 
 class ReportRequest(BaseModel):
@@ -222,7 +254,7 @@ class ReportRequest(BaseModel):
 
 
 @app.post("/report")
-async def report(request: ReportRequest):
+async def report(request: ReportRequest, raw_request: Request = None):
     """Run a scan, generate token, and email the report link."""
     if not request.email:
         raise HTTPException(status_code=400, detail="Email is required to receive the report.")
@@ -243,6 +275,13 @@ async def report(request: ReportRequest):
         score=scan_dict["score"],
         grade=scan_dict["grade"],
     )
+
+    # Save report to db
+    try:
+        scan_id = getattr(raw_request.state, "last_scan_id", None) if raw_request else None
+        db.save_report(scan_id or 0, request.email, token)
+    except Exception:
+        pass
 
     return {
         "status": "success",
@@ -268,6 +307,44 @@ async def report_pdf(request: ReportRequest):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+
+
+# ---- Admin Panel & API ----
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel():
+    import os as _os
+    path = _os.path.join(_os.path.dirname(__file__), "admin.html")
+    with open(path, "r") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/admin/stats")
+async def admin_stats(_=Depends(verify_admin)):
+    return db.get_stats()
+
+
+@app.get("/admin/scans")
+async def admin_scans(page: int = 1, limit: int = 50, hostname: str = "", _=Depends(verify_admin)):
+    scans, total = db.get_scans(page, min(limit, 200), hostname)
+    for s in scans:
+        s.pop("checks", None)
+    return {"scans": scans, "total": total, "page": page}
+
+
+@app.get("/admin/scans/{scan_id}")
+async def admin_scan_detail(scan_id: int, _=Depends(verify_admin)):
+    scan = db.get_scan(scan_id)
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    return scan
+
+
+@app.get("/admin/reports")
+async def admin_reports(page: int = 1, limit: int = 50, _=Depends(verify_admin)):
+    reports, total = db.get_reports(page, min(limit, 200))
+    return {"reports": reports, "total": total, "page": page}
 
 
 @app.get("/")

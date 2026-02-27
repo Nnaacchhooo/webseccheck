@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Pricing',
+  description: 'WebSecCheck pricing plans. Free instant scan, detailed security reports, and full penetration testing for businesses.',
+}
 
 const tiers = [
   {

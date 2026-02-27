@@ -1,3 +1,10 @@
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'About Us',
+  description: 'Meet the cybersecurity experts behind WebSecCheck. AI-powered security scanning built by offensive security professionals.',
+}
+
 const team = [
   { name: 'Shannon AI', role: 'Autonomous Pentest Engine', desc: 'Our proprietary AI that thinks like an attacker. Trained on thousands of real-world exploits and continuously learning.' },
   { name: 'Security Research Team', role: 'Offensive Security Experts', desc: 'OSCP, CEH, and GPEN certified professionals with combined 50+ years of experience in offensive security.' },

@@ -96,6 +96,7 @@ tr:hover td{background:#1a2332}
         <div class="chart-wrap"><h3>Top Pages</h3><div id="topPages"></div></div>
         <div class="chart-wrap"><h3>Top Referrers</h3><div id="topReferrers"></div></div>
       </div>
+      <div class="chart-wrap"><h3>🌍 Top Countries (Scans)</h3><div id="topCountries"></div></div>
       <div class="chart-wrap"><h3>🎯 Conversions</h3><div id="conversions"></div></div>
     </div>
     <div class="panel" id="p-reports">
@@ -175,12 +176,14 @@ async function loadScans() {
   const host = document.getElementById('domainFilter').value;
   const q = host ? `&hostname=${encodeURIComponent(host)}` : '';
   const d = await api(`/admin/scans?page=${scansPage}&limit=30${q}`);
-  let h = '<table><tr><th>#</th><th>Domain</th><th>Score</th><th>Grade</th><th>Checks</th><th>Time</th><th>Date</th></tr>';
+  let h = '<table><tr><th>#</th><th>Domain</th><th>Score</th><th>Grade</th><th>Checks</th><th>IP</th><th>Country</th><th>Time</th><th>Date</th></tr>';
   d.scans.forEach(s => {
     h += `<tr style="cursor:pointer" onclick="loadScanDetail(${s.id})">
       <td>${s.id}</td><td>${esc(s.hostname)}</td><td>${s.score}</td>
       <td><span class="grade grade-${s.grade}">${s.grade}</span></td>
       <td>✅${s.passed} ⚠️${s.warnings} ❌${s.failed}</td>
+      <td style="font-size:.75em;color:#888">${esc(s.ip_address||'—')}</td>
+      <td>${countryFlag(s.country)}</td>
       <td>${s.scan_time_seconds}s</td><td>${s.created_at||''}</td></tr>`;
   });
   h += '</table>';
@@ -227,15 +230,18 @@ async function loadReports() {
   document.getElementById('reportsContent').innerHTML = h;
 }
 
+function countryFlag(c) { if (!c || c === 'Local') return c || '—'; return esc(c); }
+
 function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
 
 // Auto-login if key stored
 async function loadAnalytics() {
   try {
-    const [ov, sc, cv] = await Promise.all([
+    const [ov, sc, cv, geo] = await Promise.all([
       api("/admin/analytics/overview"),
       api("/admin/analytics/scans"),
       api("/admin/analytics/conversions"),
+      api("/admin/analytics/geo"),
     ]);
     document.getElementById("analyticsStats").innerHTML = `
       <div class="stat-card"><div class="value">${ov.views_today}</div><div class="label">Views Today</div></div>
@@ -263,6 +269,9 @@ async function loadAnalytics() {
       <tr><td>Scan → Report Rate</td><td><span style="color:#00ff41">${cv.report_conversion_rate}%</span></td></tr>
       <tr><td>Scan → Paid Rate</td><td><span style="color:#00ff41">${cv.paid_conversion_rate}%</span></td></tr>
     </table>`;
+    // Top countries
+    document.getElementById("topCountries").innerHTML = "<table><tr><th>Country</th><th>Scans</th></tr>" +
+      (geo.top_countries||[]).map(c => `<tr><td>${esc(c.country)}</td><td>${c.count}</td></tr>`).join("") + "</table>";
   } catch(e) { console.error("Analytics error:", e); }
 }
 

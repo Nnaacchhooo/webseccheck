@@ -272,6 +272,25 @@ async def scan(request: ScanRequest, raw_request: Request = None):
         # Send scan alert email in background
         import threading
         threading.Thread(target=send_scan_alert, args=(hostname, score, score_to_grade(score), ip), daemon=True).start()
+        # Geo lookup in background
+        def _geo_lookup(sid, client_ip):
+            import ipaddress
+            try:
+                addr = ipaddress.ip_address(client_ip)
+                if addr.is_private or addr.is_loopback:
+                    country = 'Local'
+                else:
+                    import requests as _req
+                    resp = _req.get(f'http://ip-api.com/json/{client_ip}?fields=country,countryCode', timeout=5)
+                    data = resp.json()
+                    country = data.get('country', 'Unknown')
+                _conn = db.get_conn()
+                _conn.execute('UPDATE scans SET country = ? WHERE id = ?', (country, sid))
+                _conn.commit()
+            except Exception:
+                pass
+        if scan_id and ip:
+            threading.Thread(target=_geo_lookup, args=(scan_id, ip.split(',')[0].strip()), daemon=True).start()
         if raw_request:
             raw_request.state.last_scan_id = scan_id
     except Exception:
@@ -917,3 +936,8 @@ async def analytics_scans(_=Depends(verify_admin)):
 @app.get("/admin/analytics/conversions")
 async def analytics_conversions(_=Depends(verify_admin)):
     return db.get_analytics_conversions()
+
+
+@app.get("/admin/analytics/geo")
+async def analytics_geo(_=Depends(verify_admin)):
+    return db.get_analytics_geo()

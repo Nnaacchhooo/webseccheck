@@ -51,6 +51,13 @@ def init_db():
     """)
     conn.commit()
 
+    # Migration: add country column
+    try:
+        conn.execute("ALTER TABLE scans ADD COLUMN country TEXT DEFAULT ''")
+        conn.commit()
+    except Exception:
+        pass  # column already exists
+
 
 def save_scan(scan_data: dict, ip_address: str = "", user_agent: str = "") -> int:
     conn = get_conn()
@@ -313,3 +320,12 @@ def get_analytics_conversions():
         "paid_reports": paid_reports, "paid_pentests": paid_pentests,
         "report_conversion_rate": report_rate, "paid_conversion_rate": paid_rate,
     }
+
+
+def get_analytics_geo():
+    conn = get_conn()
+    top_countries = [dict(r) for r in conn.execute(
+        "SELECT country, COUNT(*) as count FROM scans WHERE country != '' AND country IS NOT NULL "
+        "AND created_at >= datetime('now', '-3 hours', '-30 days') GROUP BY country ORDER BY count DESC LIMIT 20"
+    ).fetchall()]
+    return {"top_countries": top_countries}

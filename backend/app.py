@@ -32,7 +32,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://webseccheck.com", "https://www.webseccheck.com", "https://webseccheck-8ti.pages.dev"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

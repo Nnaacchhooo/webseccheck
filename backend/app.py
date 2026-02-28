@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
-from checks import ssl_tls, http_headers, dns_records, server_exposure, cookies, cms_detection, mixed_content, redirects
+from checks import ssl_tls, http_headers, dns_records, server_exposure, cookies, cms_detection, mixed_content, redirects, security_txt, cors_check, technology_detection, email_security, content_security, privacy
 from report_generator import generate_pdf
 from token_manager import generate_token, validate_token
 from email_sender import send_report_email, send_scan_alert, RESEND_API_KEY, FROM_EMAIL
@@ -176,11 +176,17 @@ async def scan(request: ScanRequest, raw_request: Request = None):
                 ssl_tls.run_all(hostname, headers),
                 http_headers.run_all(headers),
                 dns_records.run_all(hostname),
-                server_exposure.run_all(headers),
+                server_exposure.run_all(headers, url),
                 cookies.run_all(raw_cookies),
                 cms_detection.run_all(body, headers),
                 mixed_content.run_all(body, url),
                 redirects.run_all(headers, url),
+                security_txt.run_all(url),
+                cors_check.run_all(headers),
+                technology_detection.run_all(headers, body),
+                email_security.run_all(hostname),
+                content_security.run_all(headers, body),
+                privacy.run_all(body, url),
                 return_exceptions=True,
             ),
             timeout=25,

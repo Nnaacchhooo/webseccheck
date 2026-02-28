@@ -115,11 +115,28 @@ def get_scan(scan_id: int):
     return dict(row) if row else None
 
 
-def get_reports(page: int = 1, limit: int = 50):
+def get_reports(page: int = 1, limit: int = 50, search: str = ""):
     conn = get_conn()
     offset = (page - 1) * limit
-    rows = conn.execute("SELECT * FROM reports ORDER BY created_at DESC LIMIT ? OFFSET ?", (limit, offset)).fetchall()
-    total = conn.execute("SELECT COUNT(*) FROM reports").fetchone()[0]
+    base_query = """
+        SELECT r.id, r.scan_id, r.email, r.token, r.created_at,
+               s.hostname, s.url, s.score, s.grade,
+               p.status as payment_status
+        FROM reports r
+        LEFT JOIN scans s ON r.scan_id = s.id
+        LEFT JOIN payments p ON p.email = r.email AND p.url = s.url
+    """
+    if search:
+        where = " WHERE r.email LIKE ? OR s.hostname LIKE ?"
+        like = f"%{search}%"
+        rows = conn.execute(base_query + where + " ORDER BY r.created_at DESC LIMIT ? OFFSET ?",
+                            (like, like, limit, offset)).fetchall()
+        total = conn.execute("SELECT COUNT(*) FROM reports r LEFT JOIN scans s ON r.scan_id = s.id" + where,
+                             (like, like)).fetchone()[0]
+    else:
+        rows = conn.execute(base_query + " ORDER BY r.created_at DESC LIMIT ? OFFSET ?",
+                            (limit, offset)).fetchall()
+        total = conn.execute("SELECT COUNT(*) FROM reports").fetchone()[0]
     return [dict(r) for r in rows], total
 
 
@@ -329,3 +346,15 @@ def get_analytics_geo():
         "AND created_at >= datetime('now', '-3 hours', '-30 days') GROUP BY country ORDER BY count DESC LIMIT 20"
     ).fetchall()]
     return {"top_countries": top_countries}
+
+
+
+def get_pentest_requests(page: int = 1, limit: int = 50):
+    conn = get_conn()
+    offset = (page - 1) * limit
+    rows = conn.execute(
+        "SELECT * FROM pentest_requests ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        (limit, offset)
+    ).fetchall()
+    total = conn.execute("SELECT COUNT(*) FROM pentest_requests").fetchone()[0]
+    return [dict(r) for r in rows], total

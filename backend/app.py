@@ -406,9 +406,15 @@ async def admin_scan_detail(scan_id: int, _=Depends(verify_admin)):
 
 
 @app.get("/admin/reports")
-async def admin_reports(page: int = 1, limit: int = 50, _=Depends(verify_admin)):
-    reports, total = db.get_reports(page, min(limit, 200))
+async def admin_reports(page: int = 1, limit: int = 50, search: str = "", _=Depends(verify_admin)):
+    reports, total = db.get_reports(page, min(limit, 200), search)
     return {"reports": reports, "total": total, "page": page}
+
+
+@app.get("/admin/pentests")
+async def admin_pentests(page: int = 1, limit: int = 50, _=Depends(verify_admin)):
+    pentests, total = db.get_pentest_requests(page, min(limit, 200))
+    return {"pentests": pentests, "total": total, "page": page}
 
 
 @app.get("/")

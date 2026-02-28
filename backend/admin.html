@@ -73,6 +73,7 @@ tr:hover td{background:#1a2332}
       <a class="active" onclick="showPanel('dashboard',this)">Dashboard</a>
       <a onclick="showPanel('scans',this)">Scans</a>
       <a onclick="showPanel('reports',this)">Reports</a>
+      <a onclick="showPanel('pentests',this)">🔐 Pentests</a>
       <a onclick="showPanel('analytics',this)">📊 Analytics</a>
     </div>
     <span class="logout" onclick="doLogout()">Logout</span>
@@ -100,7 +101,11 @@ tr:hover td{background:#1a2332}
       <div class="chart-wrap"><h3>🎯 Conversions</h3><div id="conversions"></div></div>
     </div>
     <div class="panel" id="p-reports">
+      <div class="filter-bar"><input id="reportFilter" placeholder="Search by email or domain..." oninput="debounceReports()"></div>
       <div id="reportsContent"></div>
+    </div>
+    <div class="panel" id="p-pentests">
+      <div id="pentestsContent"></div>
     </div>
   </div>
 </div>
@@ -108,7 +113,7 @@ tr:hover td{background:#1a2332}
 <script>
 const API = window.location.origin;
 let KEY = localStorage.getItem('wsc_admin_key') || '';
-let scansPage = 1, reportsPage = 1, debounceTimer;
+let scansPage = 1, reportsPage = 1, pentestsPage = 1, debounceTimer, reportDebounceTimer;
 
 function headers() { return { 'X-Admin-Key': KEY, 'Content-Type': 'application/json' }; }
 
@@ -147,6 +152,7 @@ function showPanel(name, el) {
   if (name === 'dashboard') loadDashboard();
   if (name === 'scans') { scansPage = 1; loadScans(); }
   if (name === 'reports') { reportsPage = 1; loadReports(); }
+  if (name === 'pentests') { pentestsPage = 1; loadPentests(); }
   if (name === 'analytics') loadAnalytics();
 }
 
@@ -216,11 +222,31 @@ async function loadScanDetail(id) {
   document.getElementById('scansContent').innerHTML = h;
 }
 
+function debounceReports() { clearTimeout(reportDebounceTimer); reportDebounceTimer = setTimeout(() => { reportsPage = 1; loadReports(); }, 300); }
+
 async function loadReports() {
-  const d = await api(`/admin/reports?page=${reportsPage}&limit=30`);
-  let h = '<table><tr><th>#</th><th>Scan ID</th><th>Email</th><th>Token</th><th>Date</th></tr>';
+  const search = document.getElementById('reportFilter') ? document.getElementById('reportFilter').value : '';
+  const q = search ? `&search=${encodeURIComponent(search)}` : '';
+  const d = await api(`/admin/reports?page=${reportsPage}&limit=30${q}`);
+  if (!d.reports || d.reports.length === 0) {
+    document.getElementById('reportsContent').innerHTML = '<p style="color:#666;text-align:center;padding:40px;">No reports generated yet</p>';
+    return;
+  }
+  let h = '<table><tr><th>Date</th><th>Email</th><th>Domain</th><th>Score</th><th>Grade</th><th>Payment</th><th>Report</th></tr>';
   d.reports.forEach(r => {
-    h += `<tr><td>${r.id}</td><td>${r.scan_id||'—'}</td><td>${esc(r.email)}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${esc(r.token||'')}</td><td>${r.created_at||''}</td></tr>`;
+    const payBadge = r.payment_status === 'approved' ? '<span style="color:#00ff41">✅ Paid</span>' :
+                     r.payment_status === 'pending' ? '<span style="color:#ffaa00">⏳ Pending</span>' :
+                     '<span style="color:#666">—</span>';
+    const grade = r.grade ? `<span class="grade grade-${r.grade}">${r.grade}</span>` : '—';
+    h += `<tr>
+      <td>${r.created_at||''}</td>
+      <td>${esc(r.email||'')}</td>
+      <td>${esc(r.hostname||'—')}</td>
+      <td>${r.score!=null ? r.score : '—'}</td>
+      <td>${grade}</td>
+      <td>${payBadge}</td>
+      <td>${r.token ? `<a href="https://api.webseccheck.com/report/${r.token}" target="_blank" style="color:#00ff41">View Report ↗</a>` : '—'}</td>
+    </tr>`;
   });
   h += '</table>';
   h += `<div class="pagination">
@@ -228,6 +254,35 @@ async function loadReports() {
     <span>Page ${reportsPage} / ${Math.ceil(d.total/30)||1}</span>
     <button ${reportsPage*30>=d.total?'disabled':''} onclick="reportsPage++;loadReports()">Next →</button></div>`;
   document.getElementById('reportsContent').innerHTML = h;
+}
+
+async function loadPentests() {
+  const d = await api(`/admin/pentests?page=${pentestsPage}&limit=30`);
+  if (!d.pentests || d.pentests.length === 0) {
+    document.getElementById('pentestsContent').innerHTML = '<p style="color:#666;text-align:center;padding:40px;">No pentest requests yet</p>';
+    return;
+  }
+  let h = '<table><tr><th>Date</th><th>Email</th><th>URL</th><th>Repo</th><th>Description</th><th>Payment</th><th>Payment ID</th></tr>';
+  d.pentests.forEach(p => {
+    const payBadge = p.payment_status === 'approved' ? '<span style="color:#00ff41">✅ Paid</span>' :
+                     p.payment_status === 'pending' ? '<span style="color:#ffaa00">⏳ Pending</span>' :
+                     `<span style="color:#666">${esc(p.payment_status||'—')}</span>`;
+    h += `<tr>
+      <td>${p.created_at||''}</td>
+      <td>${esc(p.email||'')}</td>
+      <td><a href="${esc(p.url)}" target="_blank" style="color:#00ff41">${esc(p.url||'')}</a></td>
+      <td>${p.repo_url ? `<a href="${esc(p.repo_url)}" target="_blank" style="color:#00ff41">Repo ↗</a>` : '—'}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${esc(p.description||'—')}</td>
+      <td>${payBadge}</td>
+      <td style="font-size:.75em">${esc(p.payment_id||'—')}</td>
+    </tr>`;
+  });
+  h += '</table>';
+  h += `<div class="pagination">
+    <button ${pentestsPage<=1?'disabled':''} onclick="pentestsPage--;loadPentests()">← Prev</button>
+    <span>Page ${pentestsPage} / ${Math.ceil(d.total/30)||1}</span>
+    <button ${pentestsPage*30>=d.total?'disabled':''} onclick="pentestsPage++;loadPentests()">Next →</button></div>`;
+  document.getElementById('pentestsContent').innerHTML = h;
 }
 
 function countryFlag(c) { if (!c || c === 'Local') return c || '—'; return esc(c); }

@@ -60,7 +60,7 @@ const tiers = [
       'Priority support channel',
     ],
     cta: 'Request Pentest',
-    href: '/contact',
+    href: '/pentest',
     highlight: false,
   },
 ]

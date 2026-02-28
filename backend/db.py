@@ -181,3 +181,54 @@ def get_payment_by_ext_ref(external_reference: str):
     conn = get_conn()
     row = conn.execute("SELECT * FROM payments WHERE external_reference = ?", (external_reference,)).fetchone()
     return dict(row) if row else None
+
+
+def init_pentest_table():
+    conn = get_conn()
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS pentest_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            url TEXT NOT NULL,
+            repo_url TEXT,
+            description TEXT,
+            payment_status TEXT DEFAULT "pending",
+            payment_id TEXT,
+            external_reference TEXT,
+            created_at TEXT DEFAULT (datetime("now")),
+            updated_at TEXT DEFAULT (datetime("now"))
+        );
+        CREATE INDEX IF NOT EXISTS idx_pentest_ext_ref ON pentest_requests(external_reference);
+    """)
+    conn.commit()
+
+
+def save_pentest_request(email: str, url: str, repo_url: str, description: str, external_reference: str) -> int:
+    conn = get_conn()
+    cur = conn.execute(
+        "INSERT INTO pentest_requests (email, url, repo_url, description, external_reference) VALUES (?, ?, ?, ?, ?)",
+        (email, url, repo_url, description, external_reference),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def update_pentest_status(external_reference: str, status: str, payment_id: str = ""):
+    conn = get_conn()
+    if payment_id:
+        conn.execute(
+            "UPDATE pentest_requests SET payment_status = ?, payment_id = ?, updated_at = datetime(\"now\") WHERE external_reference = ?",
+            (status, payment_id, external_reference),
+        )
+    else:
+        conn.execute(
+            "UPDATE pentest_requests SET payment_status = ?, updated_at = datetime(\"now\") WHERE external_reference = ?",
+            (status, external_reference),
+        )
+    conn.commit()
+
+
+def get_pentest_by_ext_ref(external_reference: str):
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM pentest_requests WHERE external_reference = ?", (external_reference,)).fetchone()
+    return dict(row) if row else None

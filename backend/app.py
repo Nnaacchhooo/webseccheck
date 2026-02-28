@@ -39,6 +39,7 @@ app.add_middleware(
 
 # Initialize database
 db.init_db()
+db.init_pentest_table()
 
 ADMIN_KEY = os.environ.get("ADMIN_API_KEY", "")
 
@@ -508,6 +509,123 @@ async def checkout(request: CheckoutRequest):
     return {"init_point": data.get("init_point"), "preference_id": data.get("id")}
 
 
+class PentestCheckoutRequest(BaseModel):
+    url: str
+    email: str
+    repo_url: str = ""
+    description: str = ""
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, v: str) -> str:
+        v = v.strip()
+        if not v.startswith(("http://", "https://")):
+            v = f"https://{v}"
+        parsed = urlparse(v)
+        if not parsed.hostname:
+            raise ValueError("Invalid URL")
+        return v
+
+
+@app.post("/checkout/pentest")
+async def checkout_pentest(request: PentestCheckoutRequest):
+    """Create a Mercado Pago checkout preference for Premium Pentest ($499)."""
+    if not MP_ACCESS_TOKEN:
+        raise HTTPException(status_code=500, detail="Payment system not configured")
+    if not request.email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    external_reference = f"pentest|||{request.email}|||{request.url}|||{request.repo_url}"
+
+    preference = {
+        "items": [
+            {
+                "title": "WebSecCheck Premium Pentest",
+                "quantity": 1,
+                "unit_price": 499,
+                "currency_id": "USD",
+            }
+        ],
+        "payer": {"email": request.email},
+        "back_urls": {
+            "success": "https://webseccheck.com/pentest/success",
+            "failure": "https://webseccheck.com/pentest/failure",
+            "pending": "https://webseccheck.com/pentest/pending",
+        },
+        "auto_return": "approved",
+        "notification_url": "https://api.webseccheck.com/webhook/mercadopago",
+        "external_reference": external_reference,
+    }
+
+    try:
+        resp = sync_requests.post(
+            "https://api.mercadopago.com/checkout/preferences",
+            json=preference,
+            headers={
+                "Authorization": f"Bearer {MP_ACCESS_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        print(f"MP pentest preference error: {e}")
+        raise HTTPException(status_code=502, detail="Could not create payment preference")
+
+    # Save pentest request
+    try:
+        db.save_pentest_request(
+            email=request.email,
+            url=request.url,
+            repo_url=request.repo_url,
+            description=request.description,
+            external_reference=external_reference,
+        )
+    except Exception as e:
+        print(f"DB save pentest request error: {e}")
+
+    # Send alert email to admin
+    ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "pablo.sonder@gmail.com")
+    try:
+        import threading
+
+        def _send_pentest_alert():
+            try:
+                sync_requests.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {RESEND_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "from": FROM_EMAIL,
+                        "to": [ALERT_EMAIL],
+                        "subject": "🔴 Nuevo pedido de Pentest Premium - $499",
+                        "html": f"""<div style="font-family:sans-serif;background:#0a0a0a;color:#ccc;padding:30px;">
+                            <h2 style="color:#ff4444;">🔴 Nuevo Pedido de Pentest Premium</h2>
+                            <div style="background:#111;padding:20px;border-radius:8px;border:1px solid #333;">
+                                <p><strong style="color:#fff;">Email:</strong> {request.email}</p>
+                                <p><strong style="color:#fff;">URL del sitio:</strong> {request.url}</p>
+                                <p><strong style="color:#fff;">Repositorio:</strong> {request.repo_url or 'No proporcionado'}</p>
+                                <p><strong style="color:#fff;">Descripción:</strong> {request.description or 'No proporcionada'}</p>
+                                <p><strong style="color:#00FF41;">Monto:</strong> $499 USD</p>
+                                <p style="color:#888;font-size:12px;">Estado del pago: PENDIENTE — esperando confirmación de MercadoPago</p>
+                            </div>
+                        </div>""",
+                    },
+                    timeout=10,
+                )
+            except Exception as e:
+                print(f"Pentest alert email error: {e}")
+
+        threading.Thread(target=_send_pentest_alert, daemon=True).start()
+    except Exception:
+        pass
+
+    return {"init_point": data.get("init_point"), "preference_id": data.get("id")}
+
+
 @app.post("/webhook/mercadopago")
 async def webhook_mercadopago(raw_request: Request):
     """Handle Mercado Pago IPN notifications."""
@@ -572,9 +690,81 @@ async def webhook_mercadopago(raw_request: Request):
         except Exception as e:
             print(f"DB payment update error: {e}")
 
-        # If approved, generate and send report
+        # If approved, handle based on type
         if status == "approved" and external_reference:
             parts = external_reference.split("|||")
+
+            # Pentest payment
+            if external_reference.startswith("pentest|||") and len(parts) >= 3:
+                pentest_email = parts[1]
+                pentest_url = parts[2]
+                pentest_repo = parts[3] if len(parts) > 3 else ""
+                try:
+                    db.update_pentest_status(external_reference, "approved", payment_id)
+                except Exception as e:
+                    print(f"Pentest status update error: {e}")
+
+                ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "pablo.sonder@gmail.com")
+                import threading
+
+                def _send_pentest_emails():
+                    try:
+                        # Admin confirmation
+                        sync_requests.post(
+                            "https://api.resend.com/emails",
+                            headers={
+                                "Authorization": f"Bearer {RESEND_API_KEY}",
+                                "Content-Type": "application/json",
+                            },
+                            json={
+                                "from": FROM_EMAIL,
+                                "to": [ALERT_EMAIL],
+                                "subject": "✅ Pago confirmado — Pentest Premium $499",
+                                "html": f"""<div style="font-family:sans-serif;background:#0a0a0a;color:#ccc;padding:30px;">
+                                    <h2 style="color:#00FF41;">✅ Pago Confirmado — Pentest Premium</h2>
+                                    <div style="background:#111;padding:20px;border-radius:8px;border:1px solid #333;">
+                                        <p><strong style="color:#fff;">Email:</strong> {pentest_email}</p>
+                                        <p><strong style="color:#fff;">URL:</strong> {pentest_url}</p>
+                                        <p><strong style="color:#fff;">Repo:</strong> {pentest_repo or 'N/A'}</p>
+                                        <p><strong style="color:#00FF41;">Payment ID:</strong> {payment_id}</p>
+                                    </div>
+                                </div>""",
+                            },
+                            timeout=10,
+                        )
+                        # Client confirmation
+                        sync_requests.post(
+                            "https://api.resend.com/emails",
+                            headers={
+                                "Authorization": f"Bearer {RESEND_API_KEY}",
+                                "Content-Type": "application/json",
+                            },
+                            json={
+                                "from": FROM_EMAIL,
+                                "to": [pentest_email],
+                                "subject": "🛡️ Your Penetration Test is Confirmed — WebSecCheck",
+                                "html": f"""<div style="font-family:sans-serif;background:#0a0a0a;color:#ccc;padding:30px;">
+                                    <div style="text-align:center;margin-bottom:24px;">
+                                        <div style="font-size:28px;font-weight:700;color:#fff;">🛡️ Web<span style="color:#00FF41;">Sec</span>Check</div>
+                                    </div>
+                                    <div style="background:#111;padding:24px;border-radius:12px;border:1px solid #2a2a2a;">
+                                        <h2 style="color:#00FF41;margin-top:0;">Payment Confirmed!</h2>
+                                        <p style="color:#ccc;line-height:1.8;">Thank you for your purchase. Our security team will begin your penetration test within <strong style="color:#fff;">24 hours</strong>.</p>
+                                        <p style="color:#ccc;line-height:1.8;"><strong style="color:#fff;">Target:</strong> {pentest_url}</p>
+                                        <p style="color:#ccc;line-height:1.8;">You will receive the full report via email once completed (typically 3-5 business days).</p>
+                                        <p style="color:#888;font-size:13px;margin-top:20px;">If you have any questions, reply to this email.</p>
+                                    </div>
+                                </div>""",
+                            },
+                            timeout=10,
+                        )
+                    except Exception as e:
+                        print(f"Pentest email notification error: {e}")
+
+                threading.Thread(target=_send_pentest_emails, daemon=True).start()
+                return {"status": "ok"}
+
+            # Regular report payment
             if len(parts) >= 2:
                 email = parts[0]
                 url = parts[1]

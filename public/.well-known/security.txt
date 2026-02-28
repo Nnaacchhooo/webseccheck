@@ -1,0 +1,5 @@
+Contact: mailto:security@webseccheck.com
+Expires: 2027-02-28T00:00:00.000Z
+Preferred-Languages: en, es
+Canonical: https://webseccheck.com/.well-known/security.txt
+Policy: https://webseccheck.com/privacy

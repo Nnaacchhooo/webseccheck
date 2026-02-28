@@ -192,11 +192,11 @@ def init_pentest_table():
             url TEXT NOT NULL,
             repo_url TEXT,
             description TEXT,
-            payment_status TEXT DEFAULT "pending",
+            payment_status TEXT DEFAULT 'pending',
             payment_id TEXT,
             external_reference TEXT,
-            created_at TEXT DEFAULT (datetime("now")),
-            updated_at TEXT DEFAULT (datetime("now"))
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
         );
         CREATE INDEX IF NOT EXISTS idx_pentest_ext_ref ON pentest_requests(external_reference);
     """)
@@ -217,12 +217,12 @@ def update_pentest_status(external_reference: str, status: str, payment_id: str 
     conn = get_conn()
     if payment_id:
         conn.execute(
-            "UPDATE pentest_requests SET payment_status = ?, payment_id = ?, updated_at = datetime(\"now\") WHERE external_reference = ?",
+            "UPDATE pentest_requests SET payment_status = ?, payment_id = ?, updated_at = datetime('now') WHERE external_reference = ?",
             (status, payment_id, external_reference),
         )
     else:
         conn.execute(
-            "UPDATE pentest_requests SET payment_status = ?, updated_at = datetime(\"now\") WHERE external_reference = ?",
+            "UPDATE pentest_requests SET payment_status = ?, updated_at = datetime('now') WHERE external_reference = ?",
             (status, external_reference),
         )
     conn.commit()

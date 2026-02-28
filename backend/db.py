@@ -37,14 +37,14 @@ def init_db():
             failed INTEGER,
             ip_address TEXT,
             user_agent TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (datetime('now', '-3 hours'))
         );
         CREATE TABLE IF NOT EXISTS reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             scan_id INTEGER,
             email TEXT,
             token TEXT,
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (datetime('now', '-3 hours'))
         );
         CREATE INDEX IF NOT EXISTS idx_scans_created ON scans(created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_scans_hostname ON scans(hostname);
@@ -149,8 +149,8 @@ def init_payments_table():
             url TEXT,
             external_reference TEXT,
             amount REAL,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (datetime('now', '-3 hours')),
+            updated_at TEXT DEFAULT (datetime('now', '-3 hours'))
         );
         CREATE INDEX IF NOT EXISTS idx_payments_ext_ref ON payments(external_reference);
         CREATE INDEX IF NOT EXISTS idx_payments_payment_id ON payments(payment_id);
@@ -171,7 +171,7 @@ def save_payment(payment_id: str, status: str, email: str, url: str, external_re
 def update_payment_status(payment_id: str, status: str):
     conn = get_conn()
     conn.execute(
-        "UPDATE payments SET status = ?, updated_at = datetime('now') WHERE payment_id = ?",
+        "UPDATE payments SET status = ?, updated_at = datetime('now', '-3 hours') WHERE payment_id = ?",
         (status, payment_id),
     )
     conn.commit()
@@ -195,8 +195,8 @@ def init_pentest_table():
             payment_status TEXT DEFAULT 'pending',
             payment_id TEXT,
             external_reference TEXT,
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (datetime('now', '-3 hours')),
+            updated_at TEXT DEFAULT (datetime('now', '-3 hours'))
         );
         CREATE INDEX IF NOT EXISTS idx_pentest_ext_ref ON pentest_requests(external_reference);
     """)
@@ -217,12 +217,12 @@ def update_pentest_status(external_reference: str, status: str, payment_id: str 
     conn = get_conn()
     if payment_id:
         conn.execute(
-            "UPDATE pentest_requests SET payment_status = ?, payment_id = ?, updated_at = datetime('now') WHERE external_reference = ?",
+            "UPDATE pentest_requests SET payment_status = ?, payment_id = ?, updated_at = datetime('now', '-3 hours') WHERE external_reference = ?",
             (status, payment_id, external_reference),
         )
     else:
         conn.execute(
-            "UPDATE pentest_requests SET payment_status = ?, updated_at = datetime('now') WHERE external_reference = ?",
+            "UPDATE pentest_requests SET payment_status = ?, updated_at = datetime('now', '-3 hours') WHERE external_reference = ?",
             (status, external_reference),
         )
     conn.commit()
@@ -245,7 +245,7 @@ def init_page_views_table():
             referrer TEXT DEFAULT '',
             user_agent TEXT DEFAULT '',
             ip_address TEXT DEFAULT '',
-            created_at TEXT DEFAULT (datetime('now'))
+            created_at TEXT DEFAULT (datetime('now', '-3 hours'))
         );
         CREATE INDEX IF NOT EXISTS idx_pv_created ON page_views(created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_pv_path ON page_views(path);
@@ -264,21 +264,21 @@ def save_page_view(path: str, referrer: str = "", user_agent: str = "", ip_addre
 
 def get_analytics_overview():
     conn = get_conn()
-    today = conn.execute("SELECT COUNT(*) FROM page_views WHERE date(created_at) = date('now')").fetchone()[0]
-    week = conn.execute("SELECT COUNT(*) FROM page_views WHERE created_at >= datetime('now', '-7 days')").fetchone()[0]
-    month = conn.execute("SELECT COUNT(*) FROM page_views WHERE created_at >= datetime('now', '-30 days')").fetchone()[0]
+    today = conn.execute("SELECT COUNT(*) FROM page_views WHERE date(created_at) = date('now', '-3 hours')").fetchone()[0]
+    week = conn.execute("SELECT COUNT(*) FROM page_views WHERE created_at >= datetime('now', '-3 hours', '-7 days')").fetchone()[0]
+    month = conn.execute("SELECT COUNT(*) FROM page_views WHERE created_at >= datetime('now', '-3 hours', '-30 days')").fetchone()[0]
     total = conn.execute("SELECT COUNT(*) FROM page_views").fetchone()[0]
-    unique_today = conn.execute("SELECT COUNT(DISTINCT ip_address) FROM page_views WHERE date(created_at) = date('now')").fetchone()[0]
-    unique_week = conn.execute("SELECT COUNT(DISTINCT ip_address) FROM page_views WHERE created_at >= datetime('now', '-7 days')").fetchone()[0]
-    unique_month = conn.execute("SELECT COUNT(DISTINCT ip_address) FROM page_views WHERE created_at >= datetime('now', '-30 days')").fetchone()[0]
+    unique_today = conn.execute("SELECT COUNT(DISTINCT ip_address) FROM page_views WHERE date(created_at) = date('now', '-3 hours')").fetchone()[0]
+    unique_week = conn.execute("SELECT COUNT(DISTINCT ip_address) FROM page_views WHERE created_at >= datetime('now', '-3 hours', '-7 days')").fetchone()[0]
+    unique_month = conn.execute("SELECT COUNT(DISTINCT ip_address) FROM page_views WHERE created_at >= datetime('now', '-3 hours', '-30 days')").fetchone()[0]
     views_per_day = [dict(r) for r in conn.execute(
-        "SELECT date(created_at) as day, COUNT(*) as views, COUNT(DISTINCT ip_address) as unique_visitors FROM page_views WHERE created_at >= datetime('now', '-30 days') GROUP BY date(created_at) ORDER BY day"
+        "SELECT date(created_at) as day, COUNT(*) as views, COUNT(DISTINCT ip_address) as unique_visitors FROM page_views WHERE created_at >= datetime('now', '-3 hours', '-30 days') GROUP BY date(created_at) ORDER BY day"
     ).fetchall()]
     top_pages = [dict(r) for r in conn.execute(
-        "SELECT path, COUNT(*) as views FROM page_views WHERE created_at >= datetime('now', '-30 days') GROUP BY path ORDER BY views DESC LIMIT 15"
+        "SELECT path, COUNT(*) as views FROM page_views WHERE created_at >= datetime('now', '-3 hours', '-30 days') GROUP BY path ORDER BY views DESC LIMIT 15"
     ).fetchall()]
     top_referrers = [dict(r) for r in conn.execute(
-        "SELECT referrer, COUNT(*) as views FROM page_views WHERE referrer != '' AND created_at >= datetime('now', '-30 days') GROUP BY referrer ORDER BY views DESC LIMIT 15"
+        "SELECT referrer, COUNT(*) as views FROM page_views WHERE referrer != '' AND created_at >= datetime('now', '-3 hours', '-30 days') GROUP BY referrer ORDER BY views DESC LIMIT 15"
     ).fetchall()]
     return {
         "views_today": today, "views_week": week, "views_month": month, "views_total": total,
@@ -290,12 +290,12 @@ def get_analytics_overview():
 def get_analytics_scans():
     conn = get_conn()
     scans_per_day = [dict(r) for r in conn.execute(
-        "SELECT date(created_at) as day, COUNT(*) as count FROM scans WHERE created_at >= datetime('now', '-30 days') GROUP BY date(created_at) ORDER BY day"
+        "SELECT date(created_at) as day, COUNT(*) as count FROM scans WHERE created_at >= datetime('now', '-3 hours', '-30 days') GROUP BY date(created_at) ORDER BY day"
     ).fetchall()]
     top_domains = [dict(r) for r in conn.execute(
-        "SELECT hostname, COUNT(*) as count FROM scans WHERE created_at >= datetime('now', '-30 days') GROUP BY hostname ORDER BY count DESC LIMIT 20"
+        "SELECT hostname, COUNT(*) as count FROM scans WHERE created_at >= datetime('now', '-3 hours', '-30 days') GROUP BY hostname ORDER BY count DESC LIMIT 20"
     ).fetchall()]
-    total_30d = conn.execute("SELECT COUNT(*) FROM scans WHERE created_at >= datetime('now', '-30 days')").fetchone()[0]
+    total_30d = conn.execute("SELECT COUNT(*) FROM scans WHERE created_at >= datetime('now', '-3 hours', '-30 days')").fetchone()[0]
     return {"scans_per_day": scans_per_day, "top_domains": top_domains, "total_30d": total_30d}
 
 

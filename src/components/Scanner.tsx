@@ -182,7 +182,7 @@ export default function Scanner() {
             <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-cyber-green border-t-transparent rounded-full animate-spin" />
             <span className="text-cyber-green font-semibold text-sm sm:text-base">Scanning {url}...</span>
           </div>
-          <p className="text-gray-400 text-xs sm:text-sm">Running 16 security checks against OWASP Top 10</p>
+          <p className="text-gray-400 text-xs sm:text-sm">Running 45+ security checks against OWASP Top 10</p>
         </div>
       )}
 

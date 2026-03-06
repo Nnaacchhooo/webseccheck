@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '@/i18n/LanguageContext'
 
 declare global {
   interface Window {
@@ -12,6 +13,7 @@ export default function Contact() {
   const [turnstileToken, setTurnstileToken] = useState('')
   const [error, setError] = useState('')
   const turnstileRef = useRef<HTMLDivElement>(null)
+  const { lang } = useLanguage()
 
   useEffect(() => {
     const script = document.createElement('script')
@@ -35,7 +37,7 @@ export default function Contact() {
     e.preventDefault()
     setError('')
     if (!turnstileToken) {
-      setError('Please complete the captcha verification.')
+      setError(lang === 'es' ? 'Por favor completá la verificación captcha.' : 'Please complete the captcha verification.')
       return
     }
     const form = e.currentTarget
@@ -58,65 +60,81 @@ export default function Contact() {
       }
       setSubmitted(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred.')
+      setError(err instanceof Error ? err.message : (lang === 'es' ? 'Ocurrió un error.' : 'An error occurred.'))
     }
   }
+
+  const subjects = lang === 'es'
+    ? ['Consulta sobre Escaneo Gratuito', 'Consulta sobre Reporte de Seguridad', 'Solicitud de Pentest', 'Plan Enterprise', 'Otro']
+    : ['Free Scan Question', 'Security Report Inquiry', 'Penetration Test Request', 'Enterprise Plan', 'Other']
+
+  const contactInfo = lang === 'es'
+    ? [
+        { icon: '📧', label: 'Email', value: 'security@webseccheck.com' },
+        { icon: '🕐', label: 'Tiempo de Respuesta', value: 'Dentro de 24 horas' },
+        { icon: '🔒', label: 'Seguro', value: 'Clave PGP disponible' },
+      ]
+    : [
+        { icon: '📧', label: 'Email', value: 'security@webseccheck.com' },
+        { icon: '🕐', label: 'Response Time', value: 'Within 24 hours' },
+        { icon: '🔒', label: 'Secure', value: 'PGP key available' },
+      ]
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <div className="text-center mb-12">
-        <h1 className="text-4xl sm:text-5xl font-black text-white mb-4">Get in Touch</h1>
-        <p className="text-gray-400 text-lg">Questions about security reports, pentests, or enterprise plans? We&apos;re here to help.</p>
+        <h1 className="text-4xl sm:text-5xl font-black text-white mb-4">
+          {lang === 'es' ? 'Contactanos' : 'Get in Touch'}
+        </h1>
+        <p className="text-gray-400 text-lg">
+          {lang === 'es' ? '¿Preguntas sobre reportes de seguridad, pentests o planes enterprise? Estamos para ayudarte.' : 'Questions about security reports, pentests, or enterprise plans? We\'re here to help.'}
+        </p>
       </div>
 
       {submitted ? (
         <div className="card-dark rounded-2xl p-10 text-center">
           <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-2xl font-bold text-white mb-2">Message Received</h2>
-          <p className="text-gray-400">We&apos;ll get back to you within 24 hours. For urgent security matters, please indicate so in your message.</p>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            {lang === 'es' ? 'Mensaje Recibido' : 'Message Received'}
+          </h2>
+          <p className="text-gray-400">
+            {lang === 'es' ? 'Te respondemos dentro de las 24 horas. Para asuntos urgentes de seguridad, indicalo en tu mensaje.' : 'We\'ll get back to you within 24 hours. For urgent security matters, please indicate so in your message.'}
+          </p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="card-dark rounded-2xl p-8 space-y-6">
           <div className="grid sm:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
-              <input required name="name" type="text" className="w-full px-4 py-3 bg-cyber-darkblue border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyber-green/50 text-sm" placeholder="Your name" />
+              <label className="block text-sm font-medium text-gray-300 mb-2">{lang === 'es' ? 'Nombre' : 'Name'}</label>
+              <input required name="name" type="text" className="w-full px-4 py-3 bg-cyber-darkblue border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyber-green/50 text-sm" placeholder={lang === 'es' ? 'Tu nombre' : 'Your name'} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-              <input required name="email" type="email" className="w-full px-4 py-3 bg-cyber-darkblue border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyber-green/50 text-sm" placeholder="you@company.com" />
+              <input required name="email" type="email" className="w-full px-4 py-3 bg-cyber-darkblue border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyber-green/50 text-sm" placeholder={lang === 'es' ? 'vos@empresa.com' : 'you@company.com'} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Subject</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{lang === 'es' ? 'Asunto' : 'Subject'}</label>
             <select name="subject" className="w-full px-4 py-3 bg-cyber-darkblue border border-white/10 rounded-xl text-white focus:outline-none focus:border-cyber-green/50 text-sm">
-              <option>Free Scan Question</option>
-              <option>Security Report Inquiry</option>
-              <option>Penetration Test Request</option>
-              <option>Enterprise Plan</option>
-              <option>Other</option>
+              {subjects.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Message</label>
-            <textarea required name="message" rows={5} className="w-full px-4 py-3 bg-cyber-darkblue border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyber-green/50 text-sm resize-none" placeholder="Tell us about your security needs..." />
+            <label className="block text-sm font-medium text-gray-300 mb-2">{lang === 'es' ? 'Mensaje' : 'Message'}</label>
+            <textarea required name="message" rows={5} className="w-full px-4 py-3 bg-cyber-darkblue border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyber-green/50 text-sm resize-none" placeholder={lang === 'es' ? 'Contanos sobre tus necesidades de seguridad...' : 'Tell us about your security needs...'} />
           </div>
           <div className="flex justify-center">
             <div ref={turnstileRef} />
           </div>
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <button type="submit" className="w-full gradient-cta text-black font-bold py-3 rounded-xl hover:opacity-90 transition text-sm">
-            Send Message
+            {lang === 'es' ? 'Enviar Mensaje' : 'Send Message'}
           </button>
         </form>
       )}
 
       <div className="grid sm:grid-cols-3 gap-6 mt-12">
-        {[
-          { icon: '📧', label: 'Email', value: 'security@webseccheck.com' },
-          { icon: '🕐', label: 'Response Time', value: 'Within 24 hours' },
-          { icon: '🔒', label: 'Secure', value: 'PGP key available' },
-        ].map(i => (
+        {contactInfo.map(i => (
           <div key={i.label} className="card-dark rounded-xl p-5 text-center">
             <div className="text-2xl mb-2">{i.icon}</div>
             <div className="text-white font-semibold text-sm">{i.label}</div>

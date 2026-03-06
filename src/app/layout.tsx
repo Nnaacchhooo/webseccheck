@@ -4,6 +4,7 @@ import './globals.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import Analytics from '@/components/Analytics'
+import { LanguageProvider } from '@/i18n/LanguageContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -90,10 +91,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${inter.className} bg-cyber-darkblue text-gray-200 antialiased`}>
-        <Header />
-        <Analytics />
-        <main className="pt-16 min-h-screen">{children}</main>
-        <Footer />
+        <LanguageProvider>
+          <Header />
+          <Analytics />
+          <main className="pt-16 min-h-screen">{children}</main>
+          <Footer />
+        </LanguageProvider>
       </body>
     </html>
   )
